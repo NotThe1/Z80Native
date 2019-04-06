@@ -19,6 +19,9 @@ COMTAIL			EQU		080H
 COMTAILCOUNT	EQU     COMTAIL
 COMTAILCHARS	EQU		COMTAILCOUNT + 1
 
+DMA				EQU		0080H	; Default DMA address
+RECORDSIZE		EQU		80H		; CPM record Size
+
 scPrintString	EQU		09H
 scOpenFile		EQU		0FH
 scCloseFile		EQU		10H
@@ -59,7 +62,7 @@ Start:
           LD (CallerSP),HL				; Save callers SP
           LD  HL,TopOfStack
           LD	SP,HL					; Set our stack
-          CALL GrabComTail
+          CALL GrabComTail				; Save comtail & open SUB file
           CALL 038AH
           CALL 04FEH
           CALL jpWBOOT
@@ -125,12 +128,13 @@ L022D:
 ;     <New code fragment-----from 023D to 024C ( 24C :  588)>
 ;              ORG  023DH
 L023D:
-          LD  HL,05E6H
-          LD  (HL),B
+readSeq:
+          LD  HL,05E6H					; Set up HL to store BC
+          LD  (HL),B					; Save MSB of FCB1 pointer
           DEC  HL
-          LD  (HL),C
-          LD HL,(05E5H)
-          EX	DE,HL
+          LD  (HL),C       				; Save LSB of FCB1 buffer
+          LD HL,(05E5H)					; Get what we just saved
+          EX	DE,HL					; Put 
           LD  C,scReadSeq
           CALL jpBDOS2
           RET
@@ -260,49 +264,52 @@ GrabComTail:
           LD  BC,msg2					; Load error message
           CALL errorExit				; exit via error
 GrabComTail1:
-          LD  HL,flag1
-          LD  (HL),080H					; Store 80H in the flag1   
+          LD  HL,dmaIndex				; Initialize pointer
+          LD  (HL),RECORDSIZE			; Store CPM record size  
           RET
 
 ;     <New code fragment-----from 0309 to 031F ( 31F :  799)>
 ;              ORG  0309H
-L0309:
-          LD  A,07FH
-          LD  HL,flag1
-          CP  M							; Is Flag1 value > Acc ?
-          JP	NC,0325H				; skip if not
+getNextChar:
+; Returns with next character in Acc
+          LD  A,07FH					; End of record loc
+          LD  HL,dmaIndex
+          CP  M							; Exhausted the record
+          JP	NC,0325H				; Skip if no
+		  
           LD  BC,FCB1
-          CALL 023DH
-          CP  00H
-          JP	Z,0320H
+          CALL readSeq					; Read the SUB file
+          CP  00H						; Is this the first read ?
+          JP	Z,0320H					; Skip if yes
           LD  A,01AH
           RET
 
 ;     <New code fragment-----from 0320 to 0377 ( 377 :  887)>
 ;              ORG  0320H
 L0320:
-          LD  HL,flag1
-          LD  (HL),00H					; Store 00 in flag1
+          LD  HL,dmaIndex				; Point at dmaIndex
+          LD  (HL),00H					; Store 00 in dmaIndex
 L0325:
-          LD   A,(flag1)				; Get flag1 value
+          LD   A,(dmaIndex)				; Get dmaIndex value
           INC  A						; Increment it
-          LD  (flag1),A					; And put it back
-          DEC  A						; Restore flag1s original value
+          LD  (dmaIndex),A				; And put it back
+          DEC  A						; Restore dmaIndexs original value
           LD  C,A
-          LD  B,00H
-          LD  HL,0080H					;#? COMTAILCOUNT
-          ADD  HL,BC
-          LD  A,(HL)
-          LD  (0675H),A
-          CP  0DH
-          JP	NZ,0362H
+          LD  B,00H						; Record Index
+          LD  HL,DMA					; Pointer to read buffer
+          ADD  HL,BC					; Point at current record
+		  
+          LD  A,(HL)					; Get byte from record
+          LD  (currentChar),A			; Store it in currentChar
+          CP  CR						; Is it carriage return ?
+          JP	NZ,UpCase				; Skip if not
           LD   A,(05B8H)
           INC  A
           LD  (05B8H),A
           LD  C,A
           LD  A,039H
           CP  C
-          JP	NC,0362H
+          JP	NC,UpCase
           LD  HL,05B8H
           LD  (HL),030H
           DEC  HL
@@ -312,21 +319,24 @@ L0325:
           LD  C,A
           LD  A,039H
           CP  C
-          JP	NC,0362H
+          JP	NC,UpCase
           LD  HL,05B7H
           LD  (HL),030H
           DEC  HL
           INC  M
 L0362:
-          LD   A,(0675H)
-          SUB  061H
-          CP  01AH
-          JP	NC,0374H
-          LD   A,(0675H)
-          AND  05FH
-          LD  (0675H),A
-L0374:
-          LD   A,(0675H)
+UpCase:
+; make char upper case
+          LD   A,(currentChar)			; Get the char read 
+          SUB  61H						; Test against ASCII a
+          CP  01AH						; is it >  ASCII a
+          JP	NC,UpCase1				; Skip if not				
+          LD   A,(currentChar)			; get the original char
+          AND  05FH						; make it upper case
+          LD  (currentChar),A			; Put back into currentChar
+;L0374:
+UpCase1:
+          LD   A,(currentChar)			; Get currentChar
           RET
 
 ;     <New code fragment-----from 0378 to 0389 ( 389 :  905)>
@@ -344,45 +354,47 @@ L0389:
 ;     <New code fragment-----from 038A to 03E5 ( 3E5 :  997)>
 ;              ORG  038AH
 L038A:
-          LD  HL,0676H
-          LD  (HL),00H					;#? Set to 00
+          LD  HL,newBuffer
+          LD  (HL),00H					;#? Set to 0000 - initialize
           LD  HL,0000H
-          LD (0E76H),HL 				;#? Set to 0000
+          LD (newBufferIndex),HL 				;#? Set to 0000
           LD  HL,0E7CH
           LD  (HL),01H 					;#? Set to 01
 L039A:
           LD   A,(0E7CH)				; Get value #?
           RRA							; LSB Set
           JP	NC,DumbRet1				; RET if not
-          LD  HL,0E78H
-          LD  (HL),00H					; Set to 0000 #?
+          LD  HL,commandIndex
+          LD  (HL),00H					; Init commandIndex 
 L03A6:
-          CALL 0309H
-          LD  (0E7DH),A
-          SUB  01AH
+          CALL getNextChar				; Get a char
+          LD  (currentChar1),A			; Save it
+          SUB  01AH						; ctrl-Z
           ADD	A,0FFH
           SBC  A,A
-          PUSH AF
-          LD   A,(0E7DH)
-          SUB  0DH
+          PUSH AF						;#?  what ?
+          LD   A,(currentChar1)			; Get back the char retrieved
+          SUB  CR						; carriage return
           ADD	A,0FFH
-          SBC  A,A
-          POP  BC
-          LD  C,B
-          AND  C
+          SBC  A,A						;#? What again
+          POP  BC						; get 1st what
+          LD  C,B						; both b and c are th same
+          AND  C						; #?????
           RRA
-          JP	NC,046BH
-          LD   A,(0E7DH)
-          CP  0AH
-          JP	Z,0468H
-          LD   A,(0E7DH)
-          CP  024H
-          JP	NZ,0436H
-          CALL 0309H
-          LD  (0E7DH),A
+          JP	NC,046BH				; Jump if 1A(EOF) or CR
+		  
+          LD   A,(currentChar1)			; Get back the char retrieved
+          CP  LF						; Is it a Line Feed ?
+          JP	Z,0468H					;  Skip if yes
+          LD   A,(currentChar1)			; Get back the char retrieved
+          CP  024H						; is it $
+          JP	NZ,0436H				; skip if no
+; char is $
+          CALL	getNextChar
+          LD  (currentChar1),A
           CP  024H
           JP	NZ,03E6H
-          LD HL,(0E7DH)
+          LD HL,(currentChar1)
           LD  C,L
           CALL 04C4H
           JP  0433H
@@ -390,9 +402,9 @@ L03A6:
 ;     <New code fragment-----from 03E6 to 03FD ( 3FD : 1021)>
 ;              ORG  03E6H
 L03E6:
-          LD   A,(0E7DH)
+          LD   A,(currentChar1)
           SUB  030H
-          LD  (0E7DH),A
+          LD  (currentChar1),A
           LD  C,A
           LD  A,09H
           CP  C
@@ -408,10 +420,10 @@ L03FE:
           LD  (HL),00H
           CALL 04ADH
 L0406:
-          LD   A,(0E7DH)
+          LD   A,(currentChar1)
           CP  00H
           JP	Z,0422H
-          LD  HL,0E7DH
+          LD  HL,currentChar1
           DEC  M
 L0412:
           CALL 0481H
@@ -444,12 +456,13 @@ L0433:
 ;     <New code fragment-----from 0436 to 0455 ( 455 : 1109)>
 ;              ORG  0436H
 L0436:
-          LD   A,(0E7DH)
-          CP  05EH
-          JP	NZ,0461H
-          CALL 0309H
+          LD   A,(currentChar1)				; Get back the char retrieved
+          CP  05EH						; Is it a Caret ^ (^s = ctrl-X)
+          JP	NZ,0461H				; Skip if if caret
+; here after a caret		  
+          CALL getNextChar
           SUB  061H
-          LD  (0E7DH),A
+          LD  (currentChar1),A
           LD  C,A
           LD  A,019H
           CP  C
@@ -461,7 +474,7 @@ L0436:
 ;     <New code fragment-----from 0456 to 045D ( 45D : 1117)>
 ;              ORG  0456H
 L0456:
-          LD   A,(0E7DH)
+          LD   A,(currentChar1)
           INC  A
           LD  C,A
           CALL 04C4H
@@ -474,8 +487,8 @@ L045E:
 ;     <New code fragment-----from 0461 to 0467 ( 467 : 1127)>
 ;              ORG  0461H
 L0461:
-          LD HL,(0E7DH)
-          LD  C,L
+          LD HL,(currentChar1)			; Get back the char retrieved in L
+          LD  C,L						; move it to C
           CALL 04C4H
 
 ;     <New code fragment-----from 0468 to 046A ( 46A : 1130)>
@@ -486,12 +499,12 @@ L0468:
 ;     <New code fragment-----from 046B to 047F ( 47F : 1151)>
 ;              ORG  046BH
 L046B:
-          LD   A,(0E7DH)
+          LD   A,(currentChar1)
           SUB  0DH
           SUB  01H
           SBC  A,A
           LD  (0E7CH),A
-          LD HL,(0E78H)
+          LD HL,(commandIndex)			; Get commandIndex value
           LD  C,L
           CALL 04C4H
           JP  039AH
@@ -557,32 +570,36 @@ L04C3:
 ;     <New code fragment-----from 04C4 to 04FD ( 4FD : 1277)>
 ;              ORG  04C4H
 L04C4:
-          LD  HL,0E7BH
-          LD  (HL),C
-          LD HL,(0E76H)
-          INC  HL
-          LD (0E76H),HL
+; Called with c = value to work on
+          LD  HL,currentChar2
+          LD  (HL),C					; Save the value in currentChar2
+          LD HL,(newBufferIndex)		; Get value from newBufferIndex
+          INC  HL						; Increment it
+          LD (newBufferIndex),HL		; Put it back
           LD  DE,07FFH
-          CALL 0599H
-          JP	NC,04DEH
-          LD  BC,msg4
+          CALL HLminusDE				; Did we overflow Command buffer ?
+          JP	NC,04DEH				; Skip if not				
+		  
+          LD  BC,msg4					; Command buffer overflow
           CALL errorExit				; exit via error
 L04DE:
-          LD HL,(0E76H)
-          LD  BC,0676H
+          LD HL,(newBufferIndex)		; Get value from newBufferIndex
+          LD  BC,newBuffer				; Base of newBuffer
           ADD  HL,BC
-          LD   A,(0E7BH)
-          LD  (HL),A
-          LD   A,(0E78H)
-          INC  A
-          LD  (0E78H),A
+          LD   A,(currentChar2)				; Get the working value
+          LD  (HL),A					; Put it in Buffer ?
+		  
+          LD   A,(commandIndex)			; Get value for commandIndex
+          INC  A						; Increment it
+          LD  (commandIndex),A			; Put it back
+		  
           LD  C,A
-          LD  A,07DH
+          LD  A,07DH					; Max size for command
           CP  C
-          JP	NC,04FDH
-          LD  BC,msg5
-          errorExit				; exit via error
-L04FD:
+          JP	NC,DumbRet2				; Return if size OK
+          LD  BC,msg5					; Command too long
+          CALL	errorExit				; exit via error
+DumbRet2:
           RET
 
 ;     <New code fragment-----from 04FE to 055E ( 55E : 1374)>
@@ -624,7 +641,7 @@ L0542:
           CALL 057AH
           LD HL,(0E7EH)
           LD  H,00H
-          LD  BC,0080H 					;#? COMTAILCOUNT
+          LD  BC,0080H 					;#? COMTAILCOUNT/RECORDSIZE
           ADD  HL,BC
           LD  (HL),A
           LD  HL,0E7EH
@@ -653,10 +670,10 @@ L0579:
 ;     <New code fragment-----from 057A to 0586 ( 586 : 1414)>
 ;              ORG  057AH
 L057A:
-          LD HL,(0E76H)
+          LD HL,(newBufferIndex)
           DEC  HL
-          LD (0E76H),HL
-          LD  BC,0676H
+          LD (newBufferIndex),HL
+          LD  BC,newBuffer
           ADD  HL,BC
           LD  A,(HL)
           RET
@@ -681,8 +698,10 @@ jpBDOS2:
                DS  0009H
 
 ;     <New code fragment-----from 0599 to 059F ( 59F : 1439)>
-;              ORG  0599H
+              ORG  0599H
+;----------------------------HLminusDE
 L0599:
+HLminusDE:
           LD  A,E
           SUB  L
           LD  L,A
@@ -690,6 +709,8 @@ L0599:
           SBC  A,H
           LD  H,A
           RET
+;----------------------------HLminusDE
+
 
 ;     <New unknown fragment-----from 05A0 to 05FF ( 5FF : 1535)>
 ;              ORG  05A0H
@@ -740,12 +761,17 @@ comTailTemp:
 
 			ORG		0674H
 ;L0674H:
+dmaIndex:
 flag1:
-			DB		80H					; #? value
+			DB		00H					; index into DMA record
+;L0675H:
+currentChar:
 			DS		1
 
 ;			ORG		0676H
 L0676H:
+newBuffer:
+;			DS		?
 
 			ORG		0E93H
 TopOfStack:
@@ -753,12 +779,20 @@ TopOfStack:
 
 			ORG		0E76H
 L0E76H:
+newBufferIndex:
 			DS		2
 L0E78H:
+commandIndex:
 			DS		1
 
-			DS		3
+			DS		2
+L0E7BH:
+currentChar2:
+			DS		1
 L0E7CH:
+			DS		1
+;L0E7DH:
+currentChar1:
 			DS		1
 
 EndOfCode:
