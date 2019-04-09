@@ -266,73 +266,78 @@ GrabComTail1:
 ;              ORG  0309H
 getNextChar:
 ; Returns with next character in Acc
-          LD  A,07FH					; End of record loc
-          LD  HL,dmaIndex
-          CP  M							; Exhausted the record
-          JP	NC,0325H				; Skip if no
+			LD		A,07FH				; End of record.
+			LD		HL,dmaIndex
+			CP		M					; Exhausted the record
+			JP		NC,getNextChar2		; Skip if not
 
-          LD  BC,FCB1
-          CALL readSeq					; Read the SUB file
-          CP  00H						; Is this the first read ?
-          JP	Z,0320H					; Skip if yes
-          LD  A,01AH
-          RET
+			LD		BC,FCB1				; else read more
+			CALL	readSeq				; Read the SUB file
+			CP		00H					; Is this the first read ?
+			JP		Z,getNextChar1			; Skip if yes
+			LD		A,01AH				; else return with EOF
+			RET
 
-;     <New code fragment-----from 0320 to 0377 ( 377 :  887)>
+;-----------------------   Get next char from dma read buffer
 ;              ORG  0320H
-L0320:
-          LD  HL,dmaIndex				; Point at dmaIndex
-          LD  (HL),00H					; Store 00 in dmaIndex
-L0325:
-          LD   A,(dmaIndex)				; Get dmaIndex value
-          INC  A						; Increment it
-          LD  (dmaIndex),A				; And put it back
-          DEC  A						; Restore dmaIndexs original value
-          LD  C,A
-          LD  B,00H						; Record Index
-          LD  HL,DMA					; Pointer to read buffer
-          ADD  HL,BC					; Point at current record
+;L0320:
+getNextChar1:
+; returns char in Acc.
+			LD		HL,dmaIndex			; initialize the dmaIndex
+			LD		(HL),00H
+;L0325:
+getNextChar2:
+			LD		A,(dmaIndex)		; Get dmaIndex value
+			INC		A					; Increment it
+			LD		(dmaIndex),A		; And put it back
+			DEC		A					; Restore dmaIndexs original value
+			LD		C,A
+			LD		B,00H				; Record Index
+			LD		HL,DMA				; Pointer to read buffer
+			ADD		HL,BC				; Point at current byte
+			
+			LD		A,(HL)				; Get byte from record
+			LD		(currentChar1),A	; Store it in currentChar1
+			CP		CR					; Is it carriage return ?
+			JP		NZ,UpCase			; Skip if not
 
-          LD  A,(HL)					; Get byte from record
-          LD  (currentChar),A			; Store it in currentChar
-          CP  CR						; Is it carriage return ?
-          JP	NZ,UpCase				; Skip if not
-          LD   A,(05B8H)
-          INC  A
-          LD  (05B8H),A
-          LD  C,A
-          LD  A,039H
-          CP  C
-          JP	NC,UpCase
-          LD  HL,05B8H
-          LD  (HL),030H
-          DEC  HL
-          LD  A,(HL)
-          INC  A
-          LD  (HL),A
-          LD  C,A
-          LD  A,039H
-          CP  C
-          JP	NC,UpCase
-          LD  HL,05B7H
-          LD  (HL),030H
-          DEC  HL
-          INC  M
+; else adjust the line number		  
+			LD		A,(LineNumber + 2)
+			INC		A
+			LD		(LineNumber + 2),A	; is the unit value
+			LD		C,A						
+			LD		A,039H
+			CP		C					;  > ASCII 9 ?
+			JP		NC,UpCase			;   Skip  if not
+			LD		HL,LineNumber + 2
+			LD		(HL),030H			; Set the unit value to ASCII 0
+			DEC		HL
+			LD		A,(HL)				; is the ten value
+			INC		A
+			LD		(HL),A
+			LD		C,A
+			LD		A,039H				;  > ASCII 9 ?
+			CP		C
+			JP		NC,UpCase			;   Skip  if not
+			LD		HL,LineNumber + 1
+			LD		(HL),030H			; ASCII 0
+			DEC		HL					; Set the unit value to ASCII 0
+			INC		M					; Set the hundreds value to ASCII 0
 L0362:
 UpCase:
 ; make char upper case
-          LD   A,(currentChar)			; Get the char read
+          LD   A,(currentChar1)			; Get the char read
           SUB  61H						; Test against ASCII a
           CP  01AH						; is it >  ASCII a
           JP	NC,UpCase1				; Skip if not
-          LD   A,(currentChar)			; get the original char
+          LD   A,(currentChar1)			; get the original char
           AND  05FH						; make it upper case
-          LD  (currentChar),A			; Put back into currentChar
+          LD  (currentChar1),A			; Put back into currentChar1
 ;L0374:
 UpCase1:
-          LD   A,(currentChar)			; Get currentChar
+          LD   A,(currentChar1)			; Get currentChar1
           RET
-
+;-----------------------   Get next char from dma read buffer
 ;     <New code fragment-----from 0378 to 0389 ( 389 :  905)>
 ;              ORG  0378H
 L0378:
@@ -351,23 +356,26 @@ L038A:
           LD  HL,newBuffer
           LD  (HL),00H					;#? Set to 0000 - initialize
           LD  HL,0000H
-          LD (newBufferIndex),HL 				;#? Set to 0000
-          LD  HL,0E7CH
-          LD  (HL),01H 					;#? Set to 01
+          LD (newBufferIndex),HL		;#? Set newBufferIndex to 0000
+          LD  HL,passNumber
+          LD  (HL),01H 					;#? Set passNumber to 01
 L039A:
-          LD   A,(0E7CH)				; Get value #?
-          RRA							; LSB Set
-          JP	NC,DumbRet1				; RET if not
+          LD   A,(passNumber)			; Get value #?
+          RRA							; LSB Set ?
+          JP	NC,DumbRet1				; RET if LSB not Set
+		  
           LD  HL,commandIndex
           LD  (HL),00H					; Init commandIndex
+		  
+		  
 L03A6:
           CALL getNextChar				; Get a char
-          LD  (currentChar1),A			; Save it
+          LD  (currentChar2),A			; Save it
           SUB  01AH						; ctrl-Z
           ADD	A,0FFH
           SBC  A,A
           PUSH AF						;#?  what ?
-          LD   A,(currentChar1)			; Get back the char retrieved
+          LD   A,(currentChar2)			; Get back the char retrieved
           SUB  CR						; carriage return
           ADD	A,0FFH
           SBC  A,A						;#? What again
@@ -377,18 +385,18 @@ L03A6:
           RRA
           JP	NC,046BH				; Jump if 1A(EOF) or CR
 
-          LD   A,(currentChar1)			; Get back the char retrieved
+          LD   A,(currentChar2)			; Get back the char retrieved
           CP  LF						; Is it a Line Feed ?
           JP	Z,0468H					;  Skip if yes
-          LD   A,(currentChar1)			; Get back the char retrieved
+          LD   A,(currentChar2)			; Get back the char retrieved
           CP  024H						; is it $
           JP	NZ,0436H				; skip if no
 ; char is $
           CALL	getNextChar
-          LD  (currentChar1),A
+          LD  (currentChar2),A
           CP  024H
           JP	NZ,03E6H
-          LD HL,(currentChar1)
+          LD HL,(currentChar2)
           LD  C,L
           CALL 04C4H
           JP  0433H
@@ -396,9 +404,9 @@ L03A6:
 ;     <New code fragment-----from 03E6 to 03FD ( 3FD : 1021)>
 ;              ORG  03E6H
 L03E6:
-          LD   A,(currentChar1)
+          LD   A,(currentChar2)
           SUB  030H
-          LD  (currentChar1),A
+          LD  (currentChar2),A
           LD  C,A
           LD  A,09H
           CP  C
@@ -414,10 +422,10 @@ L03FE:
           LD  (HL),00H
           CALL 04ADH
 L0406:
-          LD   A,(currentChar1)
+          LD   A,(currentChar2)
           CP  00H
           JP	Z,0422H
-          LD  HL,currentChar1
+          LD  HL,currentChar2
           DEC  M
 L0412:
           CALL 0481H
@@ -450,13 +458,13 @@ L0433:
 ;     <New code fragment-----from 0436 to 0455 ( 455 : 1109)>
 ;              ORG  0436H
 L0436:
-          LD   A,(currentChar1)				; Get back the char retrieved
+          LD   A,(currentChar2)				; Get back the char retrieved
           CP  05EH						; Is it a Caret ^ (^s = ctrl-X)
           JP	NZ,0461H				; Skip if if caret
 ; here after a caret
           CALL getNextChar
           SUB  061H
-          LD  (currentChar1),A
+          LD  (currentChar2),A
           LD  C,A
           LD  A,019H
           CP  C
@@ -468,7 +476,7 @@ L0436:
 ;     <New code fragment-----from 0456 to 045D ( 45D : 1117)>
 ;              ORG  0456H
 L0456:
-          LD   A,(currentChar1)
+          LD   A,(currentChar2)
           INC  A
           LD  C,A
           CALL 04C4H
@@ -481,7 +489,7 @@ L045E:
 ;     <New code fragment-----from 0461 to 0467 ( 467 : 1127)>
 ;              ORG  0461H
 L0461:
-          LD HL,(currentChar1)			; Get back the char retrieved in L
+          LD HL,(currentChar2)			; Get back the char retrieved in L
           LD  C,L						; move it to C
           CALL 04C4H
 
@@ -493,11 +501,11 @@ L0468:
 ;     <New code fragment-----from 046B to 047F ( 47F : 1151)>
 ;              ORG  046BH
 L046B:
-          LD   A,(currentChar1)
+          LD   A,(currentChar2)
           SUB  0DH
           SUB  01H
           SBC  A,A
-          LD  (0E7CH),A
+          LD  (passNumber),A
           LD HL,(commandIndex)			; Get commandIndex value
           LD  C,L
           CALL 04C4H
@@ -565,8 +573,8 @@ L04C3:
 ;              ORG  04C4H
 L04C4:
 ; Called with c = value to work on
-          LD  HL,currentChar2
-          LD  (HL),C					; Save the value in currentChar2
+          LD  HL,currentChar3
+          LD  (HL),C					; Save the value in currentChar3
           LD HL,(newBufferIndex)		; Get value from newBufferIndex
           INC  HL						; Increment it
           LD (newBufferIndex),HL		; Put it back
@@ -580,7 +588,7 @@ L04DE:
           LD HL,(newBufferIndex)		; Get value from newBufferIndex
           LD  BC,newBuffer				; Base of newBuffer
           ADD  HL,BC
-          LD   A,(currentChar2)				; Get the working value
+          LD   A,(currentChar3)				; Get the working value
           LD  (HL),A					; Put it in Buffer ?
 
           LD   A,(commandIndex)			; Get value for commandIndex
@@ -759,7 +767,7 @@ dmaIndex:
 flag1:
 			DB		00H					; index into DMA record
 ;L0675H:
-currentChar:
+currentChar1:
 			DS		1
 
 ;			ORG		0676H
@@ -781,12 +789,13 @@ commandIndex:
 
 			DS		2
 L0E7BH:
-currentChar2:
+currentChar3:
 			DS		1
-L0E7CH:
+;L0E7CH:
+passNumber:
 			DS		1
 ;L0E7DH:
-currentChar1:
+currentChar2:
 			DS		1
 
 EndOfCode:
