@@ -69,11 +69,11 @@ Start:
 
 ;              ORG  01F7H
 printBC:
-			LD		HL,05DDH			; Set up HL to store BC
+			LD		HL,msgMSB			; Set up HL to store BC
 			LD		(HL),B				; Save MSB of message pointer
 			DEC		HL
 			LD		(HL),C       		; Save LSB of Message buffer
-			LD		HL,(05DCH)			; get what we just saved
+			LD		HL,(msgLSB)			; get what we just saved
 			EX		DE,HL				; put it into DE
 			LD		C,scPrintString
 			CALL	jpBDOS1				; Go print it
@@ -82,85 +82,85 @@ printBC:
 ;              ORG  0207H
 openBC:
 ;Called with BC = FCB of file to open
-			LD		HL,05E0H			; Set up HL to store BC
+			LD		HL,fcbOpenMSB		; Set up HL to store BC
 			LD		(HL),B				; Save MSB of FCB
 			DEC		HL
 			LD		(HL),C       		; Save LSB of FCB
-			LD		HL,(05DFH)			; get what we just saved
+			LD		HL,(fcbOpenLSB)		; get what we just saved
 			EX		DE,HL				; put it into DE
 			LD		C,scOpenFile
 			CALL	jpBDOS2				; Open the file
 			LD		(osStatus),A		; Save the return status
 			RET
 
-;     <New code fragment-----from 021A to 022C ( 22C :  556)>
+;----------------------------------------   Close File
 ;              ORG  021AH
-L021A:
-          LD  HL,05E2H
-          LD  (HL),B
-          DEC  HL
-          LD  (HL),C
-          LD HL,(05E1H)
-          EX	DE,HL
-          LD  C,scCloseFile
-          CALL jpBDOS2
-          LD  (osStatus),A
-          RET
-
-;     <New code fragment-----from 022D to 023C ( 23C :  572)>
+closeFile:
+			LD		HL,fcbCloseMSB		; Set up HL to store BC
+			LD		(HL),B				; Save MSB of fcb
+			DEC		HL
+			LD		(HL),C       		; Save LSB of fcb
+			LD		HL,(fcbCloseLSB)	; Get what we just saved
+			EX		DE,HL				; Put FCB in DE
+			LD		C,scCloseFile
+			CALL	jpBDOS2				; Go to BDOS to Delete
+			LD		(osStatus),A		; Save the return status	
+			RET
+;----------------------------------------   Close File
+;----------------------------------------   Delete File
 ;              ORG  022DH
-L022D:
-          LD  HL,05E4H
-          LD  (HL),B
-          DEC  HL
-          LD  (HL),C
-          LD HL,(05E3H)
-          EX	DE,HL
-          LD  C,scDeleteFile
-          CALL jpBDOS1
-          RET
-
+deleteFile:
+			LD		HL,fcbDelMSB		; Set up HL to store BC
+			LD		(HL),B				; Save MSB of fcb
+			DEC		HL
+			LD		(HL),C				; Save LSB of fcb
+			LD		HL,(fcbDelLSB)		; Get what we just saved
+			EX		DE,HL				; Put FCB in DE
+			LD		C,scDeleteFile
+			CALL	jpBDOS1				; Go to BDOS to Delete
+			RET
+;----------------------------------------   Delete File
 ;              ORG  023DH
-
+;----------------------------------------   Read Seq
 readSeq:
-			LD		HL,05E6H			; Set up HL to store BC
+			LD		HL,fcbReadMSB		; Set up HL to store BC
 			LD		(HL),B				; Save MSB of FCB1 pointer
 			DEC		HL
 			LD		(HL),C       		; Save LSB of FCB1 buffer
-			LD		HL,(05E5H)			; Get what we just saved
+			LD		HL,(fcbReadLSB)		; Get what we just saved
 			EX		DE,HL				; Put FCB in DE
 			LD		C,scReadSeq
 			CALL	jpBDOS2				; Read next record
 			RET
-
-;     <New code fragment-----from 024D to 025C ( 25C :  604)>
+;----------------------------------------   Read Seq
+;----------------------------------------   Write Seq
 ;              ORG  024DH
-L024D:
-          LD  HL,05E8H
-          LD  (HL),B
-          DEC  HL
-          LD  (HL),C
-          LD HL,(05E7H)
-          EX	DE,HL
-          LD  C,scWriteSeq
-          CALL jpBDOS2
-          RET
-
-;     <New code fragment-----from 025D to 026F ( 26F :  623)>
+writeSeq:
+; fcb is in BC
+			LD		HL,fcbSubMSB		; Save the
+			LD		(HL),B
+			DEC		HL					; calling BC
+			LD		(HL),C				;  Register value
+			LD		HL,(fcbSubLSB)		; Get value into HL
+			EX		DE,HL				; Move it to DE
+			LD		C,scWriteSeq		; For Sys call
+			CALL	jpBDOS2				; Go to BDOS
+			RET
+;----------------------------------------   Write Seq
+;----------------------------------------   Make File
 ;              ORG  025DH
-L025D:
-          LD  HL,05EAH
-          LD  (HL),B
-          DEC  HL
-          LD  (HL),C
-          LD HL,(05E9H)
-          EX	DE,HL
-          LD  C,scMakeFile
-          CALL jpBDOS2
-          LD  (osStatus),A
-          RET
-
-;     <New code fragment-----from 0270 to 02A5 ( 2A5 :  677)>
+makeFile:
+			LD		HL,fcbMakeMSB		; Save the
+			LD		(HL),B
+			DEC		HL					; calling BC
+			LD		(HL),C				;  Register value
+			LD		HL,(fcbMakeLSB)		; Get value into HL
+			EX		DE,HL				; Move it to DE
+			LD		C,scMakeFile		; For Sys call
+			CALL	jpBDOS2				; Call BDOS
+			LD		(osStatus),A		; Save the return status	
+			RET
+;----------------------------------------   Make File
 ;              ORG  0270H
 ;L0270:
 ;--------------------   Move Data    -------------------------------
@@ -213,57 +213,57 @@ DumbRet:
 ;L02A7:
 errorExit:
 ; entered with BC -> String message
-          LD  HL,05F3H					; Set up HL to store BC
-          LD  (HL),B					; Save MSB of message pointer
-          DEC  HL
-          LD  (HL),C       				; Save LSB of Message buffer
-          LD  BC,LFCR
-          CALL printBC					; Print New line
-          LD  BC,msg1
-          CALL printBC					; Print Error message on line xx
-          LD  BC,LineNumber
-          CALL printBC					; Print Line Number
-          LD HL,(05F2H)
-          LD  B,H
-          LD  C,L						; Get original error message
-          CALL printBC					; Print it
-          LD HL,(CallerSP)
-          LD	SP,HL 					; Restore the users stack
-          RET
+			LD		HL,msgMSB1			; Set up HL to store BC
+			LD		(HL),B				; Save MSB of message pointer
+			DEC		HL
+			LD		(HL),C       		; Save LSB of Message buffer
+			LD		BC,LFCR
+			CALL	printBC				; Print New line
+			LD		BC,msg1
+			CALL	printBC				; Print Error message on line xx
+			LD		BC,LineNumber
+			CALL	printBC				; Print Line Number
+			LD		HL,(msgLSB1)
+			LD		B,H
+			LD		C,L					; Get original error message
+			CALL	printBC				; Print it
+			LD		HL,(CallerSP)
+			LD		SP,HL 				; Restore the users stack
+			RET
 
 ;     <New code fragment-----from 02CC to 0308 ( 308 :  776)>
 ;              ORG  02CCH
-L02CC:
+;L02CC:
 GrabComTail:
-          LD  BC,COMTAILCHARS			; comtail$chars
-          PUSH BC
-          LD  E,07FH					; comtail max size
-          LD  BC,comTailTemp
-          CALL MoveData
-          LD HL,(COMTAILCOUNT)			; comtailCount
-          LD  H,00H						; HL = Comtail count
-          LD  BC,comTailTemp			; start of tail temp
-          ADD  HL,BC					; end of tail temp
-          LD  (HL),00H					; Terminate tail with 00
-          LD  BC,txtSUB					; Point at String SUB (source)
-          PUSH BC						; Save for MoveData
-          LD  E,03H    					; Load string size
-          LD  BC,FCB1TYPE				; Point at destination
-          CALL MoveData					; Insure FCB1 is type SUB
-          LD  BC,FCB1					; Point to FCB for the SUB file
-          CALL openBC					; Open the file
-          LD   A,(osStatus)				; Get the return status
-          CP  0FFH						; Was it successful ?
-          JP	NZ,GrabComTail1			;  skip if yes
-          LD  BC,msg2					; Load error message
-          CALL errorExit				; exit via error
+			LD		BC,COMTAILCHARS		; comtail$chars
+			PUSH	BC
+			LD		E,07FH				; comtail max size
+			LD		BC,comTailTemp
+			CALL	MoveData
+			LD		HL,(COMTAILCOUNT)	; comtailCount
+			LD		H,00H				; HL = Comtail count
+			LD		BC,comTailTemp		; start of tail temp
+			ADD		HL,BC				; end of tail temp
+			LD		(HL),00H			; Terminate tail with 00
+			LD		BC,txtSUB			; Point at String SUB (source)
+			PUSH	BC					; Save for MoveData
+			LD		E,03H    			; Load string size
+			LD		BC,FCB1TYPE			; Point at destination
+			CALL	MoveData			; Insure FCB1 is type SUB
+			LD		BC,FCB1				; Point to FCB for the SUB file
+			CALL	openBC				; Open the file
+			LD		A,(osStatus)		; Get the return status
+			CP		0FFH				; Was it successful ?
+			JP		NZ,GrabComTail1		;  skip if yes
+			LD		BC,msg2				; Load error message
+			CALL	errorExit			; exit via error
 GrabComTail1:
-          LD  HL,dmaIndex				; Initialize pointer
-          LD  (HL),RECORDSIZE			; Store CPM record size
-          RET
+			LD		HL,dmaIndex			; Initialize pointer
+			LD		(HL),RECORDSIZE		; Store CPM record size
+			RET
 
-;     <New code fragment-----from 0309 to 031F ( 31F :  799)>
 ;              ORG  0309H
+;-----------------------   Get next char from dma read buffer
 getNextChar:
 ; Returns with next character in Acc
 			LD		A,07FH				; End of record.
@@ -278,11 +278,8 @@ getNextChar:
 			LD		A,01AH				; else return with EOF
 			RET
 
-;-----------------------   Get next char from dma read buffer
-;              ORG  0320H
 ;L0320:
 getNextChar1:
-; returns char in Acc.
 			LD		HL,dmaIndex			; initialize the dmaIndex
 			LD		(HL),00H
 ;L0325:
@@ -323,32 +320,37 @@ getNextChar2:
 			LD		(HL),030H			; ASCII 0
 			DEC		HL					; Set the unit value to ASCII 0
 			INC		M					; Set the hundreds value to ASCII 0
-L0362:
 UpCase:
 ; make char upper case
-          LD   A,(currentChar1)			; Get the char read
-          SUB  61H						; Test against ASCII a
-          CP  01AH						; is it >  ASCII a
-          JP	NC,UpCase1				; Skip if not
-          LD   A,(currentChar1)			; get the original char
-          AND  05FH						; make it upper case
-          LD  (currentChar1),A			; Put back into currentChar1
+			LD		A,(currentChar1)	; Get the char read
+			SUB		61H					; Test against ASCII a
+			CP		01AH				; is it >  ASCII a
+			JP		NC,UpCase1			; Skip if not
+			LD		A,(currentChar1)	; get the original char
+			AND		05FH				; make it upper case
+			LD		(currentChar1),A	; Put back into currentChar1
 ;L0374:
 UpCase1:
           LD   A,(currentChar1)			; Get currentChar1
           RET
 ;-----------------------   Get next char from dma read buffer
-;     <New code fragment-----from 0378 to 0389 ( 389 :  905)>
+
+
+; ------------------------  Write to SUB file
 ;              ORG  0378H
-L0378:
-          LD  BC,fcbSUB
-          CALL 024DH
-          CP  00H
-          JP	Z,0389H
-          LD  BC,msg3
-          CALL errorExit				; exit via error
-L0389:
+writeSUB:
+;L0378:
+			LD		BC,fcbSUB
+			CALL	writeSeq
+			CP		00H
+			JP		Z,DumbRet3				; Return if no error
+			LD		BC,msg3
+			CALL	errorExit				; exit via error
+;L0389:
+DumbRet3:
           RET
+; ------------------------  Write to SUB file
+
 
 ;     <New code fragment-----from 038A to 03E5 ( 3E5 :  997)>
 ;              ORG  038AH
@@ -608,11 +610,11 @@ DumbRet2:
 ;              ORG  04FEH
 L04FE:
           LD  BC,fcbSUB
-          CALL 022DH
+          CALL deleteFile
           LD  HL,05DBH
           LD  (HL),00H
           LD  BC,fcbSUB
-          CALL 025DH
+          CALL makeFile
           LD   A,(osStatus)
           CP  0FFH
           JP	NZ,051DH
@@ -653,14 +655,14 @@ L0542:
 ;     <New code fragment-----from 055F to 0564 ( 564 : 1380)>
 ;              ORG  055FH
 L055F:
-          CALL 0378H
+          CALL writeSUB				;   0378H
           JP  051DH
 
 ;     <New code fragment-----from 0565 to 0579 ( 579 : 1401)>
 ;              ORG  0565H
 L0565:
           LD  BC,fcbSUB
-          CALL 021AH
+          CALL closeFile
           LD   A,(osStatus)
           CP  0FFH
           JP	NZ,0579H
@@ -728,18 +730,37 @@ fcbSUB:		DB		0,'$$$    .SUB'
 
 			ORG	05DCH
 ;L5DC:
-			DS	1						; MSB of message pointer (1F7)
-;L5DD:
-			DS	1						; LSB of message pointer
+msgLSB:		DS	1						; MSB of message pointer (1F7)
+msgMSB:		DS	1						; LSB of message pointer
+
 ;L5DE:
 osStatus:
 			DS	1						; #?
 
 			ORG	05DFH
 ;L5DF:
-			DS	1						; MSB of FCB pointer (207)
-;L5E0:
-			DS	1						; LSB of FCB pointer
+fcbOpenLSB:	DS	1						; MSB of Open pointer (207)
+fcbOpenMSB:	DS	1						; LSB of Open pointer
+			
+;			ORG	05E1H
+fcbCloseLSB:	DS	1					; LSB of fcb pointer for Close
+fcbCloseMSB:	DS	1					; MSB of fcb pointer for Close
+
+;			ORG	05E3H
+fcbDelLSB:	DS	1						; LSB of fcb pointer for Delete
+fcbDelMSB:	DS	1						; MSB of fcb pointer for Delete
+
+;			ORG	05E5H
+fcbReadLSB:	DS	1						; LSB of fcb pointer for Read
+fcbReadMSB:	DS	1						; MSB of fcb pointer for Read
+
+;			ORG	05E7H
+fcbSubLSB:	DS	1						; LSB of fcbSUB pointer (24D)
+fcbSubMSB:	DS	1						; MSB of fcbSUB pointer (24D)
+
+;			ORG	05E9H
+fcbMakeLSB:	DS	1						; LSB of fcb for Make
+fcbMakeMSB:	DS	1						; MSB of fcb for Make
 
 
 
@@ -753,9 +774,9 @@ movSize:	DS		1					; Size of the remaining move
 CallerSP:	DW	 0000
 
 ;L5F2:
-			DS	1						; MSB of message pointer (2A7)
-;L5F3:
-			DS	1						; LSB of message pointer
+msgLSB1:	DS	1						; MSB of message pointer (2A7)
+msgMSB1:	DS	1						; LSB of message pointer
+
 
 ;L5F4:
 comTailTemp:
