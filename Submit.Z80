@@ -60,7 +60,7 @@ Start:
 			ADD		HL,SP
 			LD		(CallerSP),HL		; Save callers SP
 			LD		HL,TopOfStack
-			LD		SP,HL				; Set our stack
+			LD		SP,HL					; Set our stack
 			CALL	GrabComTail			; Save comtail & open SUB file
 			CALL	038AH
 			CALL	04FEH
@@ -234,69 +234,74 @@ errorExit:
 ;     <New code fragment-----from 02CC to 0308 ( 308 :  776)>
 ;              ORG  02CCH
 ;L02CC:
+
+;------------------------------- GrabComTail --------------------------------
+; Put Command tail into rawCommandLine (rcl)
+; Open SUB File
+; Initialize rclIndex
 GrabComTail:
 			LD		BC,COMTAILCHARS		; comtail$chars
 			PUSH	BC
-			LD		E,07FH				; comtail max size
-			LD		BC,comTailTemp
+			LD		E,07FH					; comtail max size
+			LD		BC,rawCommandLine	; rcl
 			CALL	MoveData
 			LD		HL,(COMTAILCOUNT)	; comtailCount
-			LD		H,00H				; HL = Comtail count
-			LD		BC,comTailTemp		; start of tail temp
-			ADD		HL,BC				; end of tail temp
-			LD		(HL),00H			; Terminate tail with 00
-			LD		BC,txtSUB			; Point at String SUB (source)
-			PUSH	BC					; Save for MoveData
-			LD		E,03H    			; Load string size
+			LD		H,00H					; HL = Comtail count
+			LD		BC,rawCommandLine	; start of raw command line
+			ADD		HL,BC					; end of tail temp
+			LD		(HL),00H				; Terminate tail with 00
+			LD		BC,txtSUB				; Point at String SUB (source)
+			PUSH	BC						; Save for MoveData
+			LD		E,03H    				; Load string size
 			LD		BC,FCB1TYPE			; Point at destination
-			CALL	MoveData			; Insure FCB1 is type SUB
+			CALL	MoveData				; Insure FCB1 is type SUB
 			LD		BC,FCB1				; Point to FCB for the SUB file
-			CALL	openBC				; Open the file
-			LD		A,(osStatus)		; Get the return status
-			CP		0FFH				; Was it successful ?
+			CALL	openBC					; Open the file
+			LD		A,(osStatus)			; Get the return status
+			CP		0FFH					; Was it successful ?
 			JP		NZ,GrabComTail1		;  skip if yes
 			LD		BC,msg2				; Load error message
-			CALL	errorExit			; exit via error
+			CALL	errorExit				; exit via error
 GrabComTail1:
-			LD		HL,dmaIndex			; Initialize pointer
+			LD		HL,rclIndex			; Initialize the RCL counter
 			LD		(HL),RECORDSIZE		; Store CPM record size
 			RET
 
 ;              ORG  0309H
 ;-----------------------   Get next char from dma read buffer
 getNextChar:
-; Returns with next character in Acc
+; Returns with next character or EOF in Acc
 			LD		A,07FH				; End of record.
-			LD		HL,dmaIndex
+			LD		HL,rclIndex
 			CP		M					; Exhausted the record
-			JP		NC,getNextChar2		; Skip if not
+			JP		NC,getNextChar2	; Skip if not
 
 			LD		BC,FCB1				; else read more
 			CALL	readSeq				; Read the SUB file
-			CP		00H					; Is this the first read ?
-			JP		Z,getNextChar1			; Skip if yes
-			LD		A,01AH				; else return with EOF
+			CP		00H					; Is this a good read ?
+			JP		Z,getNextChar1		; Skip if yes
+			LD		A,01AH					; else return with EOF
 			RET
 
 ;L0320:
 getNextChar1:
-			LD		HL,dmaIndex			; initialize the dmaIndex
+			LD		HL,rclIndex			; initialize the rclIndex
 			LD		(HL),00H
 ;L0325:
 getNextChar2:
-			LD		A,(dmaIndex)		; Get dmaIndex value
+			LD		A,(rclIndex)		; Get rclIndex value
 			INC		A					; Increment it
-			LD		(dmaIndex),A		; And put it back
+			LD		(rclIndex),A		; And put it back
 			DEC		A					; Restore dmaIndexs original value
 			LD		C,A
-			LD		B,00H				; Record Index
+			LD		B,00H				; BC = Record Index
 			LD		HL,DMA				; Pointer to read buffer
 			ADD		HL,BC				; Point at current byte
 			
 			LD		A,(HL)				; Get byte from record
 			LD		(currentChar1),A	; Store it in currentChar1
 			CP		CR					; Is it carriage return ?
-			JP		NZ,UpCase			; Skip if not
+			JP		NZ,UpCase			; Uppercase if not
 
 ; else adjust the line number		  
 			LD		A,(LineNumber + 2)
@@ -324,10 +329,10 @@ UpCase:
 ; make char upper case
 			LD		A,(currentChar1)	; Get the char read
 			SUB		61H					; Test against ASCII a
-			CP		01AH				; is it >  ASCII a
+			CP		01AH				; is it >=  ASCII a
 			JP		NC,UpCase1			; Skip if not
 			LD		A,(currentChar1)	; get the original char
-			AND		05FH				; make it upper case
+			AND	05FH				; make it upper case
 			LD		(currentChar1),A	; Put back into currentChar1
 ;L0374:
 UpCase1:
@@ -348,121 +353,141 @@ writeSUB:
 			CALL	errorExit				; exit via error
 ;L0389:
 DumbRet3:
-          RET
+			RET
 ; ------------------------  Write to SUB file
 
 
 ;     <New code fragment-----from 038A to 03E5 ( 3E5 :  997)>
 ;              ORG  038AH
 L038A:
-          LD  HL,newBuffer
-          LD  (HL),00H					;#? Set to 0000 - initialize
-          LD  HL,0000H
-          LD (newBufferIndex),HL		;#? Set newBufferIndex to 0000
-          LD  HL,passNumber
-          LD  (HL),01H 					;#? Set passNumber to 01
+			LD		HL,newBuffer
+			LD		(HL),00H					;#? Set to 0000 - initialize
+			LD		HL,0000H
+			LD		(newBufferIndex),HL		;#? Set newBufferIndex to 0000
+			LD		HL,passNumber
+			LD		(HL),01H 					;#? Set passNumber to 01
 L039A:
-          LD   A,(passNumber)			; Get value #?
-          RRA							; LSB Set ?
-          JP	NC,DumbRet1				; RET if LSB not Set
+			LD		A,(passNumber)			; Get value #?
+			RRA							; LSB Set ? ( is it FF ?) set by CR 0A
+			JP		NC,DumbRet1				; RET if LSB not Set
 		  
-          LD  HL,commandIndex
-          LD  (HL),00H					; Init commandIndex
+			LD		HL,subFileIndex
+			LD		(HL),00H					; Init subFileIndex
 		  
 		  
 L03A6:
-          CALL getNextChar				; Get a char
-          LD  (currentChar2),A			; Save it
-          SUB  01AH						; ctrl-Z
-          ADD	A,0FFH
-          SBC  A,A
-          PUSH AF						;#?  what ?
-          LD   A,(currentChar2)			; Get back the char retrieved
-          SUB  CR						; carriage return
-          ADD	A,0FFH
-          SBC  A,A						;#? What again
-          POP  BC						; get 1st what
-          LD  C,B						; both b and c are th same
-          AND  C						; #?????
-          RRA
-          JP	NC,046BH				; Jump if 1A(EOF) or CR
-
-          LD   A,(currentChar2)			; Get back the char retrieved
-          CP  LF						; Is it a Line Feed ?
-          JP	Z,0468H					;  Skip if yes
-          LD   A,(currentChar2)			; Get back the char retrieved
-          CP  024H						; is it $
-          JP	NZ,0436H				; skip if no
+			CALL	getNextChar			; Get a char, stuff into currentChar1
+; looking for either CR, or ctrl-z(EOF)
+			LD		(currentChar2),A			; Save it
+			SUB		01AH						; ctrl-Z/ EOF
+			ADD		A,0FFH
+			SBC		A,A
+			PUSH	AF						;#?  what ?
+			LD		A,(currentChar2)			; Get back the char retrieved
+			SUB		CR						; carriage return
+			ADD		A,0FFH
+			SBC		A,A						;#? What again
+			POP		BC						; get 1st what
+			LD		C,B						; both b and c are th same
+			AND	C						; #?????
+			RRA
+			JP		NC,046BH				; Jump if CR or ctrl-z(EOF)
+		  
+; Not Carriage Return or ctrl-z(EOF)
+;   If its a LF skip past this char and get next
+			LD		A,(currentChar2)			; Get back the char retrieved
+			CP		LF						; Is it a Line Feed ?
+			JP		Z,0468H					;  Loop back if yes (JP  03A6H)
+			
+; Not Line Feed
+;   Is it a $		  
+			LD		A,(currentChar2)			; Get back the char retrieved
+			CP		024H						; is it $
+			JP		NZ,0436H				; skip if not $
+		  
 ; char is $
-          CALL	getNextChar
-          LD  (currentChar2),A
-          CP  024H
-          JP	NZ,03E6H
-          LD HL,(currentChar2)
-          LD  C,L
-          CALL 04C4H
-          JP  0433H
+			CALL	getNextChar
+			LD		(currentChar2),A
+			CP		024H						;#  $$ = $
+			JP		NZ,paramStart				; skip if single $ (Parameter)
+			LD		HL,(currentChar2)
+			LD		C,L
+			CALL	04C4H
+			JP		I03A6
 
-;     <New code fragment-----from 03E6 to 03FD ( 3FD : 1021)>
-;              ORG  03E6H
-L03E6:
-          LD   A,(currentChar2)
-          SUB  030H
-          LD  (currentChar2),A
-          LD  C,A
-          LD  A,09H
-          CP  C
-          JP	NC,03FEH
-          LD  BC,msg6
-          CALL errorExit				; exit via error
-          JP  0433H
 
-;     <New code fragment-----from 03FE to 041B ( 41B : 1051)>
-;              ORG  03FEH
-L03FE:
-          LD  HL,0E7AH
-          LD  (HL),00H
-          CALL 04ADH
-L0406:
-          LD   A,(currentChar2)
-          CP  00H
-          JP	Z,0422H
-          LD  HL,currentChar2
-          DEC  M
-L0412:
-          CALL 0481H
-          RRA
-          JP	NC,041CH
-          JP  0412H
+; Single $, Argument
+;L03E6:
+paramStart:
+			LD		A,(currentChar2)			; parameter #
+			SUB		030H						; Go from ASCII to number
+			LD		(currentChar2),A			; Save it
+			LD		C,A
+			LD		A,09H						; Max parameter #
+			CP		C							; Parameter number OK ?
+			JP		NC,findArgument			;  Skip if yes
+			
+			LD		BC,msg6					; Load Error message
+			CALL	errorExit				; exit via error
+			JP		I03A6
+
+
+; Single $, Argument - continue
+findArgument:
+;L03FE:
+			LD		HL,comTailIndex				; int argument index on Comtail
+			LD		(HL),00H			; Start search at beginning			
+			CALL	skipDelimiters
+; At start of token in command tail
+findArgument1:
+;L0406:
+			LD		A,(currentChar2)	; Get index counter
+			CP		00H					; is it 0 ?					
+			JP		Z,foundArg			; yes we found our arg 
+			LD		HL,currentChar2		; Adjust the counter
+			DEC		M						;  by decrementing it
+;L0412:
+; Find token start
+findArgument2:
+			CALL	isItDelim				; test this token
+			RRA								; Acc = 0 if delim found
+			JP		NC,skipDelimiters0
+			JP		findArgument2
 
 ;     <New code fragment-----from 041C to 0421 ( 421 : 1057)>
 ;              ORG  041CH
-L041C:
-          CALL 04ADH
-          JP  0406H
+;L041C:
+skipDelimiters0:
+			CALL	skipDelimiters
+			JP		findArgument1
 
-;     <New code fragment-----from 0422 to 0432 ( 432 : 1074)>
-;              ORG  0422H
-L0422:
-          CALL 0481H
-          RRA
-          JP	NC,0433H
-          LD HL,(0E79H)
-          LD  C,L
-          CALL 04C4H
-          JP  0422H
 
-;     <New code fragment-----from 0433 to 0435 ( 435 : 1077)>
+;L0422:
+foundArg:
+			CALL	isItDelim				; test this token
+			RRA
+			JP		NC,I03A6				; Get out if Delim
+			LD 		HL,(comTailChar)
+			LD		C,L
+			CALL	04C4H
+			JP		foundArg
+
+
 ;              ORG  0433H
-L0433:
-          JP  0468H
+I03A6:
+;L0433:
+          JP  0468H			; (JP  03A6H)
 
 ;     <New code fragment-----from 0436 to 0455 ( 455 : 1109)>
 ;              ORG  0436H
+; Arrived here if currentChar2 is not
+;   $ CR LF or EOF (01AH)
+;   test for caret
 L0436:
-          LD   A,(currentChar2)				; Get back the char retrieved
-          CP  05EH						; Is it a Caret ^ (^s = ctrl-X)
-          JP	NZ,0461H				; Skip if if caret
+			LD		A,(currentChar2)				; Get back the char retrieved
+			CP		05EH						; Is it a Caret ^ (^s = ctrl-X)
+			JP		NZ,0461H				; Skip if if not a caret
+			
 ; here after a caret
           CALL getNextChar
           SUB  061H
@@ -473,7 +498,7 @@ L0436:
           JP	NC,0456H
           LD  BC,msg7
           CALL errorExit				; exit via error
-          JP  045EH
+          JP  045EH			;  ((JP  03A6H))
 
 ;     <New code fragment-----from 0456 to 045D ( 45D : 1117)>
 ;              ORG  0456H
@@ -486,14 +511,16 @@ L0456:
 ;     <New code fragment-----from 045E to 0460 ( 460 : 1120)>
 ;              ORG  045EH
 L045E:
-          JP  0468H
+          JP  0468H		;  (JP  03A6H)
 
 ;     <New code fragment-----from 0461 to 0467 ( 467 : 1127)>
 ;              ORG  0461H
+; Arrived here if currentChar2 is not
+;    ^ $ CR LF or EOF (01AH)
 L0461:
-          LD HL,(currentChar2)			; Get back the char retrieved in L
-          LD  C,L						; move it to C
-          CALL 04C4H
+			LD HL,(currentChar2)			; Get back the char retrieved in L
+			LD  C,L						; move it to C
+			CALL 04C4H
 
 ;     <New code fragment-----from 0468 to 046A ( 46A : 1130)>
 ;              ORG  0468H
@@ -502,16 +529,17 @@ L0468:
 
 ;     <New code fragment-----from 046B to 047F ( 47F : 1151)>
 ;              ORG  046BH
+; Arrived here if currentChar2 is CR or EOF (01AH)
 L046B:
-          LD   A,(currentChar2)
-          SUB  0DH
-          SUB  01H
-          SBC  A,A
-          LD  (passNumber),A
-          LD HL,(commandIndex)			; Get commandIndex value
-          LD  C,L
-          CALL 04C4H
-          JP  039AH
+			LD		A,(currentChar2)	; get active character
+			SUB		0DH
+			SUB		01H
+			SBC		A,A					; Acc = 0FFH if ODH
+			LD		(passNumber),A		; Set Pass Number to -1
+			LD		HL,(subFileIndex)	; Get subFileIndex value
+			LD		C,L					; move index to C
+			CALL	04C4H
+			JP		039AH
 
 ;     <New code fragment-----from 0480 to 0480 ( 480 : 1152)>
 ;              ORG  0480H
@@ -519,90 +547,99 @@ L046B:
 DumbRet1:
           RET
 
-;     <New code fragment-----from 0481 to 04A9 ( 4A9 : 1193)>
-;              ORG  0481H
-L0481:
-          LD HL,(0E7AH)
-          LD  H,00H
-          LD  BC,comTailTemp
-          ADD  HL,BC
-          LD  A,(HL)
-          LD  (0E79H),A
-          SUB  020H
-          SUB  01H
-          SBC  A,A
-          PUSH AF
-          LD   A,(0E79H)
-          SUB  00H
-          SUB  01H
-          SBC  A,A
-          POP  BC
-          LD  C,B
-          OR  C
-          RRA
-          JP	C,04AAH
-          LD  HL,0E7AH
-          INC  M
-          LD  A,01H
-          RET
 
-;     <New code fragment-----from 04AA to 04AC ( 4AC : 1196)>
-;              ORG  04AAH
-L04AA:
+;Find Next Token ??
+;L0481:
+; Return Acc = 0 if Delim
+;            = 1 if Not Delim
+isItDelim:
+			LD		HL,(comTailIndex)	; Get index into comtail
+			LD		H,00H
+			LD		BC,rawCommandLine	; Get base for command line
+			ADD		HL,BC
+			LD		A,(HL)				; Put current char into Acc
+			LD		(comTailChar),A
+			SUB		020H				; Test for SPACE
+			SUB		01H
+			SBC		A,A
+			PUSH	AF
+			LD		A,(comTailChar)
+			SUB		00H					; Test for NUL
+			SUB		01H
+			SBC		A,A
+			POP		BC
+			LD		C,B
+			OR		C
+			RRA
+			JP		C,DumbRet5			; Acc = 0 , delim found 
+			LD		HL,comTailIndex		; No delim
+			INC		M					; Update the index
+			LD		A,01H				; Set Acc = 1, no delim
+			RET							; return
+
+;L04AA:
+DumbRet5:
           LD  A,00H
           RET
 
 ;     <New code fragment-----from 04AD to 04C2 ( 4C2 : 1218)>
 ;              ORG  04ADH
-L04AD:
-          LD HL,(0E7AH)
-          LD  H,00H
-          LD  BC,comTailTemp
-          ADD  HL,BC
-          LD  A,(HL)
-          CP  020H
-          JP	NZ,04C3H
-          LD  HL,0E7AH
-          INC  M
-          JP  04ADH
+
+skipDelimiters:
+			LD		HL,(comTailIndex)	; Get comtail index
+			LD		H,00H
+			LD		BC,rawCommandLine	; Get base for command line
+			ADD		HL,BC
+			LD		A,(HL)					; Get character
+			CP		020H					; Is it a Space ?
+			JP		NZ,DumbRet4			;  Return if not
+			LD		HL,comTailIndex		; else go for more
+			INC		M						; increment the index
+			JP		skipDelimiters		; Loop
 
 ;     <New code fragment-----from 04C3 to 04C3 ( 4C3 : 1219)>
 ;              ORG  04C3H
-L04C3:
+;L04C3:
+DumbRet4:
           RET
 
 ;     <New code fragment-----from 04C4 to 04FD ( 4FD : 1277)>
 ;              ORG  04C4H
+; Arrived here if currentChar2 is not
+;    ^ $  LF or EOF (01AH)
+;  Character from currentChar2 is in C
+; is this where we build the resolved commands ?????????????
 L04C4:
 ; Called with c = value to work on
-          LD  HL,currentChar3
-          LD  (HL),C					; Save the value in currentChar3
-          LD HL,(newBufferIndex)		; Get value from newBufferIndex
-          INC  HL						; Increment it
-          LD (newBufferIndex),HL		; Put it back
-          LD  DE,07FFH
-          CALL HLminusDE				; Did we overflow Command buffer ?
-          JP	NC,04DEH				; Skip if not
-
-          LD  BC,msg4					; Command buffer overflow
-          CALL errorExit				; exit via error
+			LD		HL,currentChar3
+			LD		(HL),C					; Save the value in currentChar3
+			LD		HL,(newBufferIndex)		; Get value from newBufferIndex
+			INC		HL						; Increment it
+			LD		(newBufferIndex),HL		; Put it back
+			LD		DE,07FFH
+			CALL	HLminusDE				; Did we overflow Command buffer ?
+			JP		NC,04DEH				; Skip if not
+			
+			LD		BC,msg4					; Command buffer overflow
+			CALL	errorExit				; exit via error
+			
 L04DE:
-          LD HL,(newBufferIndex)		; Get value from newBufferIndex
-          LD  BC,newBuffer				; Base of newBuffer
-          ADD  HL,BC
-          LD   A,(currentChar3)				; Get the working value
-          LD  (HL),A					; Put it in Buffer ?
-
-          LD   A,(commandIndex)			; Get value for commandIndex
-          INC  A						; Increment it
-          LD  (commandIndex),A			; Put it back
-
-          LD  C,A
-          LD  A,07DH					; Max size for command
-          CP  C
-          JP	NC,DumbRet2				; Return if size OK
-          LD  BC,msg5					; Command too long
-          CALL	errorExit				; exit via error
+			LD		HL,(newBufferIndex)		; Get value from newBufferIndex
+			LD		BC,newBuffer				; Base of newBuffer
+			ADD		HL,BC
+			LD		A,(currentChar3)				; Get the working value
+			LD		(HL),A					; Put it in Buffer ?
+			
+			LD		A,(subFileIndex)			; Get value for subFileIndex
+			INC		A						; Increment it
+			LD		(subFileIndex),A			; Put it back
+			
+			LD		C,A
+			LD		A,07DH					; Max size for command(file name)
+			CP		C
+			JP		NC,DumbRet2				; Return if size OK
+			LD		BC,msg5					; Command too long
+			CALL	errorExit				; exit via error
 DumbRet2:
           RET
 
@@ -724,7 +761,7 @@ HLminusDE:
 LineNumber:
 			DB	'001 $'
 
-			ORG	05BBH
+;			ORG	05BBH
 fcbSUB:		DB		0,'$$$    .SUB'
 
 
@@ -737,7 +774,7 @@ msgMSB:		DS	1						; LSB of message pointer
 osStatus:
 			DS	1						; #?
 
-			ORG	05DFH
+;			ORG	05DFH
 ;L5DF:
 fcbOpenLSB:	DS	1						; MSB of Open pointer (207)
 fcbOpenMSB:	DS	1						; LSB of Open pointer
@@ -764,7 +801,7 @@ fcbMakeMSB:	DS	1						; MSB of fcb for Make
 
 
 
-      			ORG		05EBH
+;      			ORG		05EBH
 ;------- moveData Variables -------
 movSrc:		DS		2					; Source pointer  for move
 movDest:	DS		2					; Destination pointer for Move
@@ -779,12 +816,12 @@ msgMSB1:	DS	1						; LSB of message pointer
 
 
 ;L5F4:
-comTailTemp:
+rawCommandLine:
 			DS		07FH
 
 			ORG		0674H
 ;L0674H:
-dmaIndex:
+rclIndex:
 flag1:
 			DB		00H					; index into DMA record
 ;L0675H:
@@ -792,7 +829,7 @@ currentChar1:
 			DS		1
 
 ;			ORG		0676H
-L0676H:
+;L0676H:
 newBuffer:
 ;			DS		?
 
@@ -801,15 +838,15 @@ TopOfStack:
 
 
 			ORG		0E76H
-L0E76H:
-newBufferIndex:
-			DS		2
-L0E78H:
-commandIndex:
-			DS		1
 
-			DS		2
-L0E7BH:
+newBufferIndex:		DS		2
+
+subFileIndex:		DS		1
+comTailChar:		DS		1
+;L0E7AH
+comTailIndex:
+			DS		1
+;L0E7BH:
 currentChar3:
 			DS		1
 ;L0E7CH:
