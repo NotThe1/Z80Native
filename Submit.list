@@ -69,11 +69,11 @@
 0069: 01F7
 0070: 01F7         ;              ORG  01F7H
 0071: 01F7             printBC:
-0072: 01F7 21 DD 05               LD     HL,05DDH             ; Set up HL to store BC
+0072: 01F7 21 DD 05               LD     HL,msgMSB            ; Set up HL to store BC
 0073: 01FA 70                     LD     (HL),B               ; Save MSB of message pointer
 0074: 01FB 2B                     DEC    HL
 0075: 01FC 71                     LD     (HL),C               ; Save LSB of Message buffer
-0076: 01FD 2A DC 05               LD     HL,(05DCH)           ; get what we just saved
+0076: 01FD 2A DC 05               LD     HL,(msgLSB)          ; get what we just saved
 0077: 0200 EB                     EX     DE,HL                ; put it into DE
 0078: 0201 0E 09                  LD     C,scPrintString
 0079: 0203 CD 8A 05               CALL   jpBDOS1              ; Go print it
@@ -82,85 +82,85 @@
 0082: 0207         ;              ORG  0207H
 0083: 0207             openBC:
 0084: 0207         ;Called with BC = FCB of file to open
-0085: 0207 21 E0 05               LD     HL,05E0H             ; Set up HL to store BC
+0085: 0207 21 E0 05               LD     HL,fcbOpenMSB        ; Set up HL to store BC
 0086: 020A 70                     LD     (HL),B               ; Save MSB of FCB
 0087: 020B 2B                     DEC    HL
 0088: 020C 71                     LD     (HL),C               ; Save LSB of FCB
-0089: 020D 2A DF 05               LD     HL,(05DFH)           ; get what we just saved
+0089: 020D 2A DF 05               LD     HL,(fcbOpenLSB)      ; get what we just saved
 0090: 0210 EB                     EX     DE,HL                ; put it into DE
 0091: 0211 0E 0F                  LD     C,scOpenFile
 0092: 0213 CD 8D 05               CALL   jpBDOS2              ; Open the file
 0093: 0216 32 DE 05               LD     (osStatus),A         ; Save the return status
 0094: 0219 C9                     RET
 0095: 021A
-0096: 021A         ;     <New code fragment-----from 021A to 022C ( 22C :  556)>
+0096: 021A         ;----------------------------------------   Close File
 0097: 021A         ;              ORG  021AH
-0098: 021A             L021A:
-0099: 021A 21 E2 05               LD     HL,05E2H
-0100: 021D 70                     LD     (HL),B
+0098: 021A             closeFile:
+0099: 021A 21 E2 05               LD     HL,fcbCloseMSB       ; Set up HL to store BC
+0100: 021D 70                     LD     (HL),B               ; Save MSB of fcb
 0101: 021E 2B                     DEC    HL
-0102: 021F 71                     LD     (HL),C
-0103: 0220 2A E1 05               LD     HL,(05E1H)
-0104: 0223 EB                     EX     DE,HL
+0102: 021F 71                     LD     (HL),C               ; Save LSB of fcb
+0103: 0220 2A E1 05               LD     HL,(fcbCloseLSB)     ; Get what we just saved
+0104: 0223 EB                     EX     DE,HL                ; Put FCB in DE
 0105: 0224 0E 10                  LD     C,scCloseFile
-0106: 0226 CD 8D 05               CALL   jpBDOS2
-0107: 0229 32 DE 05               LD     (osStatus),A
+0106: 0226 CD 8D 05               CALL   jpBDOS2              ; Go to BDOS to Delete
+0107: 0229 32 DE 05               LD     (osStatus),A         ; Save the return status
 0108: 022C C9                     RET
-0109: 022D
-0110: 022D         ;     <New code fragment-----from 022D to 023C ( 23C :  572)>
+0109: 022D         ;----------------------------------------   Close File
+0110: 022D         ;----------------------------------------   Delete File
 0111: 022D         ;              ORG  022DH
-0112: 022D             L022D:
-0113: 022D 21 E4 05               LD     HL,05E4H
-0114: 0230 70                     LD     (HL),B
+0112: 022D             deleteFile:
+0113: 022D 21 E4 05               LD     HL,fcbDelMSB         ; Set up HL to store BC
+0114: 0230 70                     LD     (HL),B               ; Save MSB of fcb
 0115: 0231 2B                     DEC    HL
-0116: 0232 71                     LD     (HL),C
-0117: 0233 2A E3 05               LD     HL,(05E3H)
-0118: 0236 EB                     EX     DE,HL
+0116: 0232 71                     LD     (HL),C               ; Save LSB of fcb
+0117: 0233 2A E3 05               LD     HL,(fcbDelLSB)       ; Get what we just saved
+0118: 0236 EB                     EX     DE,HL                ; Put FCB in DE
 0119: 0237 0E 13                  LD     C,scDeleteFile
-0120: 0239 CD 8A 05               CALL   jpBDOS1
+0120: 0239 CD 8A 05               CALL   jpBDOS1              ; Go to BDOS to Delete
 0121: 023C C9                     RET
-0122: 023D
+0122: 023D         ;----------------------------------------   Delete File
 0123: 023D         ;              ORG  023DH
-0124: 023D
+0124: 023D         ;----------------------------------------   Read Seq
 0125: 023D             readSeq:
-0126: 023D 21 E6 05               LD     HL,05E6H             ; Set up HL to store BC
+0126: 023D 21 E6 05               LD     HL,fcbReadMSB        ; Set up HL to store BC
 0127: 0240 70                     LD     (HL),B               ; Save MSB of FCB1 pointer
 0128: 0241 2B                     DEC    HL
 0129: 0242 71                     LD     (HL),C               ; Save LSB of FCB1 buffer
-0130: 0243 2A E5 05               LD     HL,(05E5H)           ; Get what we just saved
+0130: 0243 2A E5 05               LD     HL,(fcbReadLSB)      ; Get what we just saved
 0131: 0246 EB                     EX     DE,HL                ; Put FCB in DE
 0132: 0247 0E 14                  LD     C,scReadSeq
 0133: 0249 CD 8D 05               CALL   jpBDOS2              ; Read next record
 0134: 024C C9                     RET
-0135: 024D
-0136: 024D         ;     <New code fragment-----from 024D to 025C ( 25C :  604)>
+0135: 024D         ;----------------------------------------   Read Seq
+0136: 024D         ;----------------------------------------   Write Seq
 0137: 024D         ;              ORG  024DH
-0138: 024D             L024D:
-0139: 024D 21 E8 05               LD     HL,05E8H
-0140: 0250 70                     LD     (HL),B
-0141: 0251 2B                     DEC    HL
-0142: 0252 71                     LD     (HL),C
-0143: 0253 2A E7 05               LD     HL,(05E7H)
-0144: 0256 EB                     EX     DE,HL
-0145: 0257 0E 15                  LD     C,scWriteSeq
-0146: 0259 CD 8D 05               CALL   jpBDOS2
-0147: 025C C9                     RET
-0148: 025D
-0149: 025D         ;     <New code fragment-----from 025D to 026F ( 26F :  623)>
-0150: 025D         ;              ORG  025DH
-0151: 025D             L025D:
-0152: 025D 21 EA 05               LD     HL,05EAH
-0153: 0260 70                     LD     (HL),B
-0154: 0261 2B                     DEC    HL
-0155: 0262 71                     LD     (HL),C
-0156: 0263 2A E9 05               LD     HL,(05E9H)
-0157: 0266 EB                     EX     DE,HL
-0158: 0267 0E 16                  LD     C,scMakeFile
-0159: 0269 CD 8D 05               CALL   jpBDOS2
-0160: 026C 32 DE 05               LD     (osStatus),A
-0161: 026F C9                     RET
-0162: 0270
-0163: 0270         ;     <New code fragment-----from 0270 to 02A5 ( 2A5 :  677)>
+0138: 024D             writeSeq:
+0139: 024D         ; fcb is in BC
+0140: 024D 21 E8 05               LD     HL,fcbSubMSB         ; Save the
+0141: 0250 70                     LD     (HL),B
+0142: 0251 2B                     DEC    HL                   ; calling BC
+0143: 0252 71                     LD     (HL),C               ;  Register value
+0144: 0253 2A E7 05               LD     HL,(fcbSubLSB)       ; Get value into HL
+0145: 0256 EB                     EX     DE,HL                ; Move it to DE
+0146: 0257 0E 15                  LD     C,scWriteSeq         ; For Sys call
+0147: 0259 CD 8D 05               CALL   jpBDOS2              ; Go to BDOS
+0148: 025C C9                     RET
+0149: 025D         ;----------------------------------------   Write Seq
+0150: 025D         ;----------------------------------------   Make File
+0151: 025D         ;              ORG  025DH
+0152: 025D             makeFile:
+0153: 025D 21 EA 05               LD     HL,fcbMakeMSB        ; Save the
+0154: 0260 70                     LD     (HL),B
+0155: 0261 2B                     DEC    HL                   ; calling BC
+0156: 0262 71                     LD     (HL),C               ;  Register value
+0157: 0263 2A E9 05               LD     HL,(fcbMakeLSB)      ; Get value into HL
+0158: 0266 EB                     EX     DE,HL                ; Move it to DE
+0159: 0267 0E 16                  LD     C,scMakeFile         ; For Sys call
+0160: 0269 CD 8D 05               CALL   jpBDOS2              ; Call BDOS
+0161: 026C 32 DE 05               LD     (osStatus),A         ; Save the return status
+0162: 026F C9                     RET
+0163: 0270         ;----------------------------------------   Make File
 0164: 0270         ;              ORG  0270H
 0165: 0270         ;L0270:
 0166: 0270         ;--------------------   Move Data    -------------------------------
@@ -213,7 +213,7 @@
 0213: 02A7         ;L02A7:
 0214: 02A7             errorExit:
 0215: 02A7         ; entered with BC -> String message
-0216: 02A7 21 F3 05               LD     HL,05F3H             ; Set up HL to store BC
+0216: 02A7 21 F3 05               LD     HL,msgMSB1           ; Set up HL to store BC
 0217: 02AA 70                     LD     (HL),B               ; Save MSB of message pointer
 0218: 02AB 2B                     DEC    HL
 0219: 02AC 71                     LD     (HL),C               ; Save LSB of Message buffer
@@ -223,7 +223,7 @@
 0223: 02B6 CD F7 01               CALL   printBC              ; Print Error message on line xx
 0224: 02B9 01 B6 05               LD     BC,LineNumber
 0225: 02BC CD F7 01               CALL   printBC              ; Print Line Number
-0226: 02BF 2A F2 05               LD     HL,(05F2H)
+0226: 02BF 2A F2 05               LD     HL,(msgLSB1)
 0227: 02C2 44                     LD     B,H
 0228: 02C3 4D                     LD     C,L                  ; Get original error message
 0229: 02C4 CD F7 01               CALL   printBC              ; Print it
@@ -233,688 +233,758 @@
 0233: 02CC
 0234: 02CC         ;     <New code fragment-----from 02CC to 0308 ( 308 :  776)>
 0235: 02CC         ;              ORG  02CCH
-0236: 02CC             L02CC:
-0237: 02CC             GrabComTail:
-0238: 02CC 01 81 00               LD     BC,COMTAILCHARS      ; comtail$chars
-0239: 02CF C5                     PUSH   BC
-0240: 02D0 1E 7F                  LD     E,07FH               ; comtail max size
-0241: 02D2 01 F4 05               LD     BC,comTailTemp
-0242: 02D5 CD 70 02               CALL   MoveData
-0243: 02D8 2A 80 00               LD     HL,(COMTAILCOUNT)    ; comtailCount
-0244: 02DB 26 00                  LD     H,00H                ; HL = Comtail count
-0245: 02DD 01 F4 05               LD     BC,comTailTemp       ; start of tail temp
-0246: 02E0 09                     ADD    HL,BC                ; end of tail temp
-0247: 02E1 36 00                  LD     (HL),00H             ; Terminate tail with 00
-0248: 02E3 01 3A 01               LD     BC,txtSUB            ; Point at String SUB (source)
-0249: 02E6 C5                     PUSH   BC                   ; Save for MoveData
-0250: 02E7 1E 03                  LD     E,03H                ; Load string size
-0251: 02E9 01 65 00               LD     BC,FCB1TYPE          ; Point at destination
-0252: 02EC CD 70 02               CALL   MoveData             ; Insure FCB1 is type SUB
-0253: 02EF 01 5C 00               LD     BC,FCB1              ; Point to FCB for the SUB file
-0254: 02F2 CD 07 02               CALL   openBC               ; Open the file
-0255: 02F5 3A DE 05               LD     A,(osStatus)         ; Get the return status
-0256: 02F8 FE FF                  CP     0FFH                 ; Was it successful ?
-0257: 02FA C2 03 03               JP     NZ,GrabComTail1      ;  skip if yes
-0258: 02FD 01 3D 01               LD     BC,msg2              ; Load error message
-0259: 0300 CD A7 02               CALL   errorExit            ; exit via error
-0260: 0303             GrabComTail1:
-0261: 0303 21 74 06               LD     HL,dmaIndex          ; Initialize pointer
-0262: 0306 36 80                  LD     (HL),RECORDSIZE      ; Store CPM record size
-0263: 0308 C9                     RET
-0264: 0309
-0265: 0309         ;     <New code fragment-----from 0309 to 031F ( 31F :  799)>
-0266: 0309         ;              ORG  0309H
-0267: 0309             getNextChar:
-0268: 0309         ; Returns with next character in Acc
-0269: 0309 3E 7F                  LD     A,07FH               ; End of record.
-0270: 030B 21 74 06               LD     HL,dmaIndex
-0271: 030E BE                     CP     M                    ; Exhausted the record
-0272: 030F D2 25 03               JP     NC,getNextChar2      ; Skip if not
-0273: 0312
-0274: 0312 01 5C 00               LD     BC,FCB1              ; else read more
-0275: 0315 CD 3D 02               CALL   readSeq              ; Read the SUB file
-0276: 0318 FE 00                  CP     00H                  ; Is this the first read ?
-0277: 031A CA 20 03               JP     Z,getNextChar1       ; Skip if yes
-0278: 031D 3E 1A                  LD     A,01AH               ; else return with EOF
-0279: 031F C9                     RET
-0280: 0320
-0281: 0320         ;-----------------------   Get next char from dma read buffer
-0282: 0320         ;              ORG  0320H
-0283: 0320         ;L0320:
-0284: 0320             getNextChar1:
-0285: 0320         ; returns char in Acc.
-0286: 0320 21 74 06               LD     HL,dmaIndex          ; initialize the dmaIndex
-0287: 0323 36 00                  LD     (HL),00H
-0288: 0325         ;L0325:
-0289: 0325             getNextChar2:
-0290: 0325 3A 74 06               LD     A,(dmaIndex)         ; Get dmaIndex value
-0291: 0328 3C                     INC    A                    ; Increment it
-0292: 0329 32 74 06               LD     (dmaIndex),A         ; And put it back
-0293: 032C 3D                     DEC    A                    ; Restore dmaIndexs original value
-0294: 032D 4F                     LD     C,A
-0295: 032E 06 00                  LD     B,00H                ; Record Index
-0296: 0330 21 80 00               LD     HL,DMA               ; Pointer to read buffer
-0297: 0333 09                     ADD    HL,BC                ; Point at current byte
-0298: 0334
-0299: 0334 7E                     LD     A,(HL)               ; Get byte from record
-0300: 0335 32 75 06               LD     (currentChar1),A     ; Store it in currentChar1
-0301: 0338 FE 0D                  CP     CR                   ; Is it carriage return ?
-0302: 033A C2 62 03               JP     NZ,UpCase            ; Skip if not
-0303: 033D
-0304: 033D         ; else adjust the line number
-0305: 033D 3A B8 05               LD     A,(LineNumber+2)
-0306: 0340 3C                     INC    A
-0307: 0341 32 B8 05               LD     (LineNumber+2),A     ; is the unit value
-0308: 0344 4F                     LD     C,A
-0309: 0345 3E 39                  LD     A,039H
-0310: 0347 B9                     CP     C                    ;  > ASCII 9 ?
-0311: 0348 D2 62 03               JP     NC,UpCase            ;   Skip  if not
-0312: 034B 21 B8 05               LD     HL,LineNumber+2
-0313: 034E 36 30                  LD     (HL),030H            ; Set the unit value to ASCII 0
-0314: 0350 2B                     DEC    HL
-0315: 0351 7E                     LD     A,(HL)               ; is the ten value
-0316: 0352 3C                     INC    A
-0317: 0353 77                     LD     (HL),A
-0318: 0354 4F                     LD     C,A
-0319: 0355 3E 39                  LD     A,039H               ;  > ASCII 9 ?
-0320: 0357 B9                     CP     C
-0321: 0358 D2 62 03               JP     NC,UpCase            ;   Skip  if not
-0322: 035B 21 B7 05               LD     HL,LineNumber+1
-0323: 035E 36 30                  LD     (HL),030H            ; ASCII 0
-0324: 0360 2B                     DEC    HL                   ; Set the unit value to ASCII 0
-0325: 0361 34                     INC    M                    ; Set the hundreds value to ASCII 0
-0326: 0362             L0362:
-0327: 0362             UpCase:
-0328: 0362         ; make char upper case
-0329: 0362 3A 75 06               LD     A,(currentChar1)     ; Get the char read
-0330: 0365 D6 61                  SUB    61H                  ; Test against ASCII a
-0331: 0367 FE 1A                  CP     01AH                 ; is it >  ASCII a
-0332: 0369 D2 74 03               JP     NC,UpCase1           ; Skip if not
-0333: 036C 3A 75 06               LD     A,(currentChar1)     ; get the original char
-0334: 036F E6 5F                  AND    05FH                 ; make it upper case
-0335: 0371 32 75 06               LD     (currentChar1),A     ; Put back into currentChar1
-0336: 0374         ;L0374:
-0337: 0374             UpCase1:
-0338: 0374 3A 75 06               LD     A,(currentChar1)     ; Get currentChar1
-0339: 0377 C9                     RET
-0340: 0378         ;-----------------------   Get next char from dma read buffer
-0341: 0378         ;     <New code fragment-----from 0378 to 0389 ( 389 :  905)>
-0342: 0378         ;              ORG  0378H
-0343: 0378             L0378:
-0344: 0378 01 BB 05               LD     BC,fcbSUB
-0345: 037B CD 4D 02               CALL   024DH
-0346: 037E FE 00                  CP     00H
-0347: 0380 CA 89 03               JP     Z,0389H
-0348: 0383 01 53 01               LD     BC,msg3
-0349: 0386 CD A7 02               CALL   errorExit            ; exit via error
-0350: 0389             L0389:
-0351: 0389 C9                     RET
-0352: 038A
-0353: 038A         ;     <New code fragment-----from 038A to 03E5 ( 3E5 :  997)>
-0354: 038A         ;              ORG  038AH
-0355: 038A             L038A:
-0356: 038A 21 76 06               LD     HL,newBuffer
-0357: 038D 36 00                  LD     (HL),00H             ;#? Set to 0000 - initialize
-0358: 038F 21 00 00               LD     HL,0000H
-0359: 0392 22 76 0E               LD     (newBufferIndex),HL  ;#? Set newBufferIndex to 0000
-0360: 0395 21 7C 0E               LD     HL,passNumber
-0361: 0398 36 01                  LD     (HL),01H             ;#? Set passNumber to 01
-0362: 039A             L039A:
-0363: 039A 3A 7C 0E               LD     A,(passNumber)       ; Get value #?
-0364: 039D 1F                     RRA                         ; LSB Set ?
-0365: 039E D2 80 04               JP     NC,DumbRet1          ; RET if LSB not Set
-0366: 03A1
-0367: 03A1 21 78 0E               LD     HL,commandIndex
-0368: 03A4 36 00                  LD     (HL),00H             ; Init commandIndex
-0369: 03A6
-0370: 03A6
-0371: 03A6             L03A6:
-0372: 03A6 CD 09 03               CALL   getNextChar          ; Get a char
-0373: 03A9 32 7D 0E               LD     (currentChar2),A     ; Save it
-0374: 03AC D6 1A                  SUB    01AH                 ; ctrl-Z
-0375: 03AE C6 FF                  ADD    A,0FFH
-0376: 03B0 9F                     SBC    A,A
-0377: 03B1 F5                     PUSH   AF                   ;#?  what ?
-0378: 03B2 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
-0379: 03B5 D6 0D                  SUB    CR                   ; carriage return
-0380: 03B7 C6 FF                  ADD    A,0FFH
-0381: 03B9 9F                     SBC    A,A                  ;#? What again
-0382: 03BA C1                     POP    BC                   ; get 1st what
-0383: 03BB 48                     LD     C,B                  ; both b and c are th same
-0384: 03BC A1                     AND    C                    ; #?????
-0385: 03BD 1F                     RRA
-0386: 03BE D2 6B 04               JP     NC,046BH             ; Jump if 1A(EOF) or CR
-0387: 03C1
-0388: 03C1 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
-0389: 03C4 FE 0A                  CP     LF                   ; Is it a Line Feed ?
-0390: 03C6 CA 68 04               JP     Z,0468H              ;  Skip if yes
-0391: 03C9 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
-0392: 03CC FE 24                  CP     024H                 ; is it $
-0393: 03CE C2 36 04               JP     NZ,0436H             ; skip if no
-0394: 03D1         ; char is $
-0395: 03D1 CD 09 03               CALL   getNextChar
-0396: 03D4 32 7D 0E               LD     (currentChar2),A
-0397: 03D7 FE 24                  CP     024H
-0398: 03D9 C2 E6 03               JP     NZ,03E6H
-0399: 03DC 2A 7D 0E               LD     HL,(currentChar2)
-0400: 03DF 4D                     LD     C,L
-0401: 03E0 CD C4 04               CALL   04C4H
-0402: 03E3 C3 33 04               JP     0433H
-0403: 03E6
-0404: 03E6         ;     <New code fragment-----from 03E6 to 03FD ( 3FD : 1021)>
-0405: 03E6         ;              ORG  03E6H
-0406: 03E6             L03E6:
-0407: 03E6 3A 7D 0E               LD     A,(currentChar2)
-0408: 03E9 D6 30                  SUB    030H
-0409: 03EB 32 7D 0E               LD     (currentChar2),A
-0410: 03EE 4F                     LD     C,A
-0411: 03EF 3E 09                  LD     A,09H
-0412: 03F1 B9                     CP     C
-0413: 03F2 D2 FE 03               JP     NC,03FEH
-0414: 03F5 01 8D 01               LD     BC,msg6
-0415: 03F8 CD A7 02               CALL   errorExit            ; exit via error
-0416: 03FB C3 33 04               JP     0433H
-0417: 03FE
-0418: 03FE         ;     <New code fragment-----from 03FE to 041B ( 41B : 1051)>
-0419: 03FE         ;              ORG  03FEH
-0420: 03FE             L03FE:
-0421: 03FE 21 7A 0E               LD     HL,0E7AH
-0422: 0401 36 00                  LD     (HL),00H
-0423: 0403 CD AD 04               CALL   04ADH
-0424: 0406             L0406:
-0425: 0406 3A 7D 0E               LD     A,(currentChar2)
-0426: 0409 FE 00                  CP     00H
-0427: 040B CA 22 04               JP     Z,0422H
-0428: 040E 21 7D 0E               LD     HL,currentChar2
-0429: 0411 35                     DEC    M
-0430: 0412             L0412:
-0431: 0412 CD 81 04               CALL   0481H
-0432: 0415 1F                     RRA
-0433: 0416 D2 1C 04               JP     NC,041CH
-0434: 0419 C3 12 04               JP     0412H
-0435: 041C
-0436: 041C         ;     <New code fragment-----from 041C to 0421 ( 421 : 1057)>
-0437: 041C         ;              ORG  041CH
-0438: 041C             L041C:
-0439: 041C CD AD 04               CALL   04ADH
-0440: 041F C3 06 04               JP     0406H
-0441: 0422
-0442: 0422         ;     <New code fragment-----from 0422 to 0432 ( 432 : 1074)>
-0443: 0422         ;              ORG  0422H
-0444: 0422             L0422:
-0445: 0422 CD 81 04               CALL   0481H
-0446: 0425 1F                     RRA
-0447: 0426 D2 33 04               JP     NC,0433H
-0448: 0429 2A 79 0E               LD     HL,(0E79H)
-0449: 042C 4D                     LD     C,L
-0450: 042D CD C4 04               CALL   04C4H
-0451: 0430 C3 22 04               JP     0422H
-0452: 0433
-0453: 0433         ;     <New code fragment-----from 0433 to 0435 ( 435 : 1077)>
-0454: 0433         ;              ORG  0433H
-0455: 0433             L0433:
-0456: 0433 C3 68 04               JP     0468H
-0457: 0436
-0458: 0436         ;     <New code fragment-----from 0436 to 0455 ( 455 : 1109)>
-0459: 0436         ;              ORG  0436H
-0460: 0436             L0436:
-0461: 0436 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
-0462: 0439 FE 5E                  CP     05EH                 ; Is it a Caret ^ (^s = ctrl-X)
-0463: 043B C2 61 04               JP     NZ,0461H             ; Skip if if caret
-0464: 043E         ; here after a caret
-0465: 043E CD 09 03               CALL   getNextChar
-0466: 0441 D6 61                  SUB    061H
-0467: 0443 32 7D 0E               LD     (currentChar2),A
-0468: 0446 4F                     LD     C,A
-0469: 0447 3E 19                  LD     A,019H
-0470: 0449 B9                     CP     C
-0471: 044A D2 56 04               JP     NC,0456H
-0472: 044D 01 9D 01               LD     BC,msg7
-0473: 0450 CD A7 02               CALL   errorExit            ; exit via error
-0474: 0453 C3 5E 04               JP     045EH
-0475: 0456
-0476: 0456         ;     <New code fragment-----from 0456 to 045D ( 45D : 1117)>
-0477: 0456         ;              ORG  0456H
-0478: 0456             L0456:
-0479: 0456 3A 7D 0E               LD     A,(currentChar2)
-0480: 0459 3C                     INC    A
-0481: 045A 4F                     LD     C,A
-0482: 045B CD C4 04               CALL   04C4H
-0483: 045E
-0484: 045E         ;     <New code fragment-----from 045E to 0460 ( 460 : 1120)>
-0485: 045E         ;              ORG  045EH
-0486: 045E             L045E:
-0487: 045E C3 68 04               JP     0468H
-0488: 0461
-0489: 0461         ;     <New code fragment-----from 0461 to 0467 ( 467 : 1127)>
-0490: 0461         ;              ORG  0461H
-0491: 0461             L0461:
-0492: 0461 2A 7D 0E               LD     HL,(currentChar2)    ; Get back the char retrieved in L
-0493: 0464 4D                     LD     C,L                  ; move it to C
-0494: 0465 CD C4 04               CALL   04C4H
-0495: 0468
-0496: 0468         ;     <New code fragment-----from 0468 to 046A ( 46A : 1130)>
-0497: 0468         ;              ORG  0468H
-0498: 0468             L0468:
-0499: 0468 C3 A6 03               JP     03A6H
-0500: 046B
-0501: 046B         ;     <New code fragment-----from 046B to 047F ( 47F : 1151)>
-0502: 046B         ;              ORG  046BH
-0503: 046B             L046B:
-0504: 046B 3A 7D 0E               LD     A,(currentChar2)
-0505: 046E D6 0D                  SUB    0DH
-0506: 0470 D6 01                  SUB    01H
-0507: 0472 9F                     SBC    A,A
-0508: 0473 32 7C 0E               LD     (passNumber),A
-0509: 0476 2A 78 0E               LD     HL,(commandIndex)    ; Get commandIndex value
-0510: 0479 4D                     LD     C,L
-0511: 047A CD C4 04               CALL   04C4H
-0512: 047D C3 9A 03               JP     039AH
-0513: 0480
-0514: 0480         ;     <New code fragment-----from 0480 to 0480 ( 480 : 1152)>
-0515: 0480         ;              ORG  0480H
-0516: 0480         ;L0480:
-0517: 0480             DumbRet1:
-0518: 0480 C9                     RET
-0519: 0481
-0520: 0481         ;     <New code fragment-----from 0481 to 04A9 ( 4A9 : 1193)>
-0521: 0481         ;              ORG  0481H
-0522: 0481             L0481:
-0523: 0481 2A 7A 0E               LD     HL,(0E7AH)
-0524: 0484 26 00                  LD     H,00H
-0525: 0486 01 F4 05               LD     BC,comTailTemp
-0526: 0489 09                     ADD    HL,BC
-0527: 048A 7E                     LD     A,(HL)
-0528: 048B 32 79 0E               LD     (0E79H),A
-0529: 048E D6 20                  SUB    020H
-0530: 0490 D6 01                  SUB    01H
-0531: 0492 9F                     SBC    A,A
-0532: 0493 F5                     PUSH   AF
-0533: 0494 3A 79 0E               LD     A,(0E79H)
-0534: 0497 D6 00                  SUB    00H
-0535: 0499 D6 01                  SUB    01H
-0536: 049B 9F                     SBC    A,A
-0537: 049C C1                     POP    BC
-0538: 049D 48                     LD     C,B
-0539: 049E B1                     OR     C
-0540: 049F 1F                     RRA
-0541: 04A0 DA AA 04               JP     C,04AAH
-0542: 04A3 21 7A 0E               LD     HL,0E7AH
-0543: 04A6 34                     INC    M
-0544: 04A7 3E 01                  LD     A,01H
-0545: 04A9 C9                     RET
-0546: 04AA
-0547: 04AA         ;     <New code fragment-----from 04AA to 04AC ( 4AC : 1196)>
-0548: 04AA         ;              ORG  04AAH
-0549: 04AA             L04AA:
-0550: 04AA 3E 00                  LD     A,00H
-0551: 04AC C9                     RET
-0552: 04AD
-0553: 04AD         ;     <New code fragment-----from 04AD to 04C2 ( 4C2 : 1218)>
-0554: 04AD         ;              ORG  04ADH
-0555: 04AD             L04AD:
-0556: 04AD 2A 7A 0E               LD     HL,(0E7AH)
-0557: 04B0 26 00                  LD     H,00H
-0558: 04B2 01 F4 05               LD     BC,comTailTemp
-0559: 04B5 09                     ADD    HL,BC
-0560: 04B6 7E                     LD     A,(HL)
-0561: 04B7 FE 20                  CP     020H
-0562: 04B9 C2 C3 04               JP     NZ,04C3H
-0563: 04BC 21 7A 0E               LD     HL,0E7AH
-0564: 04BF 34                     INC    M
-0565: 04C0 C3 AD 04               JP     04ADH
-0566: 04C3
-0567: 04C3         ;     <New code fragment-----from 04C3 to 04C3 ( 4C3 : 1219)>
-0568: 04C3         ;              ORG  04C3H
-0569: 04C3             L04C3:
-0570: 04C3 C9                     RET
-0571: 04C4
-0572: 04C4         ;     <New code fragment-----from 04C4 to 04FD ( 4FD : 1277)>
-0573: 04C4         ;              ORG  04C4H
-0574: 04C4             L04C4:
-0575: 04C4         ; Called with c = value to work on
-0576: 04C4 21 7B 0E               LD     HL,currentChar3
-0577: 04C7 71                     LD     (HL),C               ; Save the value in currentChar3
-0578: 04C8 2A 76 0E               LD     HL,(newBufferIndex)  ; Get value from newBufferIndex
-0579: 04CB 23                     INC    HL                   ; Increment it
-0580: 04CC 22 76 0E               LD     (newBufferIndex),HL  ; Put it back
-0581: 04CF 11 FF 07               LD     DE,07FFH
-0582: 04D2 CD 99 05               CALL   HLminusDE            ; Did we overflow Command buffer ?
-0583: 04D5 D2 DE 04               JP     NC,04DEH             ; Skip if not
-0584: 04D8
-0585: 04D8 01 64 01               LD     BC,msg4              ; Command buffer overflow
-0586: 04DB CD A7 02               CALL   errorExit            ; exit via error
-0587: 04DE             L04DE:
-0588: 04DE 2A 76 0E               LD     HL,(newBufferIndex)  ; Get value from newBufferIndex
-0589: 04E1 01 76 06               LD     BC,newBuffer         ; Base of newBuffer
-0590: 04E4 09                     ADD    HL,BC
-0591: 04E5 3A 7B 0E               LD     A,(currentChar3)     ; Get the working value
-0592: 04E8 77                     LD     (HL),A               ; Put it in Buffer ?
-0593: 04E9
-0594: 04E9 3A 78 0E               LD     A,(commandIndex)     ; Get value for commandIndex
-0595: 04EC 3C                     INC    A                    ; Increment it
-0596: 04ED 32 78 0E               LD     (commandIndex),A     ; Put it back
-0597: 04F0
-0598: 04F0 4F                     LD     C,A
-0599: 04F1 3E 7D                  LD     A,07DH               ; Max size for command
-0600: 04F3 B9                     CP     C
-0601: 04F4 D2 FD 04               JP     NC,DumbRet2          ; Return if size OK
-0602: 04F7 01 7C 01               LD     BC,msg5              ; Command too long
-0603: 04FA CD A7 02               CALL   errorExit            ; exit via error
-0604: 04FD             DumbRet2:
-0605: 04FD C9                     RET
-0606: 04FE
-0607: 04FE         ;     <New code fragment-----from 04FE to 055E ( 55E : 1374)>
-0608: 04FE         ;              ORG  04FEH
-0609: 04FE             L04FE:
-0610: 04FE 01 BB 05               LD     BC,fcbSUB
-0611: 0501 CD 2D 02               CALL   022DH
-0612: 0504 21 DB 05               LD     HL,05DBH
-0613: 0507 36 00                  LD     (HL),00H
-0614: 0509 01 BB 05               LD     BC,fcbSUB
-0615: 050C CD 5D 02               CALL   025DH
-0616: 050F 3A DE 05               LD     A,(osStatus)
-0617: 0512 FE FF                  CP     0FFH
-0618: 0514 C2 1D 05               JP     NZ,051DH
-0619: 0517 01 B7 01               LD     BC,msg8
-0620: 051A CD A7 02               CALL   02A7H
-0621: 051D             L051D:
-0622: 051D CD 7A 05               CALL   057AH
-0623: 0520 32 7E 0E               LD     (0E7EH),A
-0624: 0523 FE 00                  CP     00H
-0625: 0525 CA 65 05               JP     Z,0565H
-0626: 0528 3A 7E 0E               LD     A,(0E7EH)
-0627: 052B 32 80 00               LD     (0080H),A            ;#? COMTAILCOUNT
-0628: 052E 4F                     LD     C,A
-0629: 052F 06 00                  LD     B,00H
-0630: 0531 21 81 00               LD     HL,0081H
-0631: 0534 09                     ADD    HL,BC
-0632: 0535 36 00                  LD     (HL),00H
-0633: 0537 2A 7E 0E               LD     HL,(0E7EH)
-0634: 053A 26 00                  LD     H,00H
-0635: 053C 01 82 00               LD     BC,0082H
-0636: 053F 09                     ADD    HL,BC
-0637: 0540 36 24                  LD     (HL),024H
-0638: 0542             L0542:
-0639: 0542 3E 00                  LD     A,00H
-0640: 0544 21 7E 0E               LD     HL,0E7EH
-0641: 0547 BE                     CP     M
-0642: 0548 D2 5F 05               JP     NC,055FH
-0643: 054B CD 7A 05               CALL   057AH
-0644: 054E 2A 7E 0E               LD     HL,(0E7EH)
-0645: 0551 26 00                  LD     H,00H
-0646: 0553 01 80 00               LD     BC,0080H             ;#? COMTAILCOUNT/RECORDSIZE
-0647: 0556 09                     ADD    HL,BC
-0648: 0557 77                     LD     (HL),A
-0649: 0558 21 7E 0E               LD     HL,0E7EH
-0650: 055B 35                     DEC    M
-0651: 055C C3 42 05               JP     0542H
-0652: 055F
-0653: 055F         ;     <New code fragment-----from 055F to 0564 ( 564 : 1380)>
-0654: 055F         ;              ORG  055FH
-0655: 055F             L055F:
-0656: 055F CD 78 03               CALL   0378H
-0657: 0562 C3 1D 05               JP     051DH
-0658: 0565
-0659: 0565         ;     <New code fragment-----from 0565 to 0579 ( 579 : 1401)>
-0660: 0565         ;              ORG  0565H
-0661: 0565             L0565:
-0662: 0565 01 BB 05               LD     BC,fcbSUB
-0663: 0568 CD 1A 02               CALL   021AH
-0664: 056B 3A DE 05               LD     A,(osStatus)
-0665: 056E FE FF                  CP     0FFH
-0666: 0570 C2 79 05               JP     NZ,0579H
-0667: 0573 01 C6 01               LD     BC,msg9
-0668: 0576 CD A7 02               CALL   02A7H
-0669: 0579             L0579:
-0670: 0579 C9                     RET
-0671: 057A
-0672: 057A         ;     <New code fragment-----from 057A to 0586 ( 586 : 1414)>
-0673: 057A         ;              ORG  057AH
-0674: 057A             L057A:
-0675: 057A 2A 76 0E               LD     HL,(newBufferIndex)
-0676: 057D 2B                     DEC    HL
-0677: 057E 22 76 0E               LD     (newBufferIndex),HL
-0678: 0581 01 76 06               LD     BC,newBuffer
-0679: 0584 09                     ADD    HL,BC
-0680: 0585 7E                     LD     A,(HL)
-0681: 0586 C9                     RET
-0682: 0587
-0683: 0587         ;     <New code fragment-----from 0587 to 0589 ( 589 : 1417)>
-0684: 0587         ;              ORG  0587H
-0685: 0587             jpWBOOT:
-0686: 0587 C3 00 00               JP     WBOOT
-0687: 058A
-0688: 058A         ;     <New code fragment-----from 058A to 058C ( 58C : 1420)>
-0689: 058A         ;              ORG  058AH
-0690: 058A             jpBDOS1:
-0691: 058A C3 05 00               JP     BDOS
-0692: 058D
-0693: 058D         ;     <New code fragment-----from 058D to 058F ( 58F : 1423)>
-0694: 058D         ;              ORG  058DH
-0695: 058D             jpBDOS2:
-0696: 058D C3 05 00               JP     BDOS
-0697: 0590
-0698: 0590         ;     <New unknown fragment-----from 0590 to 0598 ( 598 : 1432)>
-0699: 0590         ;              ORG  0590H
-0700: 0590                        DS     0009H
-0701: 0599
-0702: 0599         ;     <New code fragment-----from 0599 to 059F ( 59F : 1439)>
-0703: 0599                        ORG    0599H
-0704: 0599         ;----------------------------HLminusDE
-0705: 0599             L0599:
-0706: 0599             HLminusDE:
-0707: 0599 7B                     LD     A,E
-0708: 059A 95                     SUB    L
-0709: 059B 6F                     LD     L,A
-0710: 059C 7A                     LD     A,D
-0711: 059D 9C                     SBC    A,H
-0712: 059E 67                     LD     H,A
-0713: 059F C9                     RET
-0714: 05A0         ;----------------------------HLminusDE
-0715: 05A0
-0716: 05A0
-0717: 05A0         ;     <New unknown fragment-----from 05A0 to 05FF ( 5FF : 1535)>
-0718: 05A0         ;              ORG  05A0H
-0719: 05A0         ;			DS		27
-0720: 05A0                        ORG    05B6H
-0721: 05B6         ;L05B6:
-0722: 05B6             LineNumber:
-0723: 05B6 30 30 31 20 24                DB     '001 $'
-0724: 05BB
-0725: 05BB                        ORG    05BBH
-0726: 05BB 00 24 24 24 20 20 20 20 2E 53 55 42     fcbSUB:    DB     0,'$$$    .SUB'
-0727: 05C7
-0728: 05C7
-0729: 05C7                        ORG    05DCH
-0730: 05DC         ;L5DC:
-0731: 05DC                        DS     1                    ; MSB of message pointer (1F7)
-0732: 05DD         ;L5DD:
-0733: 05DD                        DS     1                    ; LSB of message pointer
-0734: 05DE         ;L5DE:
-0735: 05DE             osStatus:
-0736: 05DE                        DS     1                    ; #?
-0737: 05DF
-0738: 05DF                        ORG    05DFH
-0739: 05DF         ;L5DF:
-0740: 05DF                        DS     1                    ; MSB of FCB pointer (207)
-0741: 05E0         ;L5E0:
-0742: 05E0                        DS     1                    ; LSB of FCB pointer
-0743: 05E1
-0744: 05E1
-0745: 05E1
-0746: 05E1                        ORG    05EBH
-0747: 05EB         ;------- moveData Variables -------
-0748: 05EB             movSrc:    DS     2                    ; Source pointer  for move
-0749: 05ED             movDest:   DS     2                    ; Destination pointer for Move
-0750: 05EF             movSize:   DS     1                    ; Size of the remaining move
-0751: 05F0
-0752: 05F0         ;			ORG		05F0H
-0753: 05F0 00 00       CallerSP:  DW     0000
-0754: 05F2
-0755: 05F2         ;L5F2:
-0756: 05F2                        DS     1                    ; MSB of message pointer (2A7)
-0757: 05F3         ;L5F3:
-0758: 05F3                        DS     1                    ; LSB of message pointer
-0759: 05F4
-0760: 05F4         ;L5F4:
-0761: 05F4             comTailTemp:
-0762: 05F4                        DS     07FH
-0763: 0673
-0764: 0673                        ORG    0674H
-0765: 0674         ;L0674H:
-0766: 0674             dmaIndex:
-0767: 0674             flag1:
-0768: 0674 00                     DB     00H                  ; index into DMA record
-0769: 0675         ;L0675H:
-0770: 0675             currentChar1:
-0771: 0675                        DS     1
-0772: 0676
-0773: 0676         ;			ORG		0676H
-0774: 0676             L0676H:
-0775: 0676             newBuffer:
-0776: 0676         ;			DS		?
-0777: 0676
-0778: 0676                        ORG    0E93H
-0779: 0E93             TopOfStack:
-0780: 0E93
-0781: 0E93
-0782: 0E93                        ORG    0E76H
-0783: 0E76             L0E76H:
-0784: 0E76             newBufferIndex:
-0785: 0E76                        DS     2
-0786: 0E78             L0E78H:
-0787: 0E78             commandIndex:
-0788: 0E78                        DS     1
-0789: 0E79
-0790: 0E79                        DS     2
-0791: 0E7B             L0E7BH:
-0792: 0E7B             currentChar3:
-0793: 0E7B                        DS     1
-0794: 0E7C         ;L0E7CH:
-0795: 0E7C             passNumber:
-0796: 0E7C                        DS     1
-0797: 0E7D         ;L0E7DH:
-0798: 0E7D             currentChar2:
-0799: 0E7D                        DS     1
-0800: 0E7E
-0801: 0E7E             EndOfCode:
+0236: 02CC         ;L02CC:
+0237: 02CC
+0238: 02CC         ;------------------------------- GrabComTail --------------------------------
+0239: 02CC         ; Put Command tail into rawCommandLine (rcl)
+0240: 02CC         ; Open SUB File
+0241: 02CC         ; Initialize rclIndex
+0242: 02CC             GrabComTail:
+0243: 02CC 01 81 00               LD     BC,COMTAILCHARS      ; comtail$chars
+0244: 02CF C5                     PUSH   BC
+0245: 02D0 1E 7F                  LD     E,07FH               ; comtail max size
+0246: 02D2 01 F4 05               LD     BC,rawCommandLine    ; rcl
+0247: 02D5 CD 70 02               CALL   MoveData
+0248: 02D8 2A 80 00               LD     HL,(COMTAILCOUNT)    ; comtailCount
+0249: 02DB 26 00                  LD     H,00H                ; HL = Comtail count
+0250: 02DD 01 F4 05               LD     BC,rawCommandLine    ; start of raw command line
+0251: 02E0 09                     ADD    HL,BC                ; end of tail temp
+0252: 02E1 36 00                  LD     (HL),00H             ; Terminate tail with 00
+0253: 02E3 01 3A 01               LD     BC,txtSUB            ; Point at String SUB (source)
+0254: 02E6 C5                     PUSH   BC                   ; Save for MoveData
+0255: 02E7 1E 03                  LD     E,03H                ; Load string size
+0256: 02E9 01 65 00               LD     BC,FCB1TYPE          ; Point at destination
+0257: 02EC CD 70 02               CALL   MoveData             ; Insure FCB1 is type SUB
+0258: 02EF 01 5C 00               LD     BC,FCB1              ; Point to FCB for the SUB file
+0259: 02F2 CD 07 02               CALL   openBC               ; Open the file
+0260: 02F5 3A DE 05               LD     A,(osStatus)         ; Get the return status
+0261: 02F8 FE FF                  CP     0FFH                 ; Was it successful ?
+0262: 02FA C2 03 03               JP     NZ,GrabComTail1      ;  skip if yes
+0263: 02FD 01 3D 01               LD     BC,msg2              ; Load error message
+0264: 0300 CD A7 02               CALL   errorExit            ; exit via error
+0265: 0303             GrabComTail1:
+0266: 0303 21 74 06               LD     HL,rclIndex          ; Initialize the RCL counter
+0267: 0306 36 80                  LD     (HL),RECORDSIZE      ; Store CPM record size
+0268: 0308 C9                     RET
+0269: 0309
+0270: 0309         ;              ORG  0309H
+0271: 0309         ;-----------------------   Get next char from dma read buffer
+0272: 0309             getNextChar:
+0273: 0309         ; Returns with next character or EOF in Acc
+0274: 0309 3E 7F                  LD     A,07FH               ; End of record.
+0275: 030B 21 74 06               LD     HL,rclIndex
+0276: 030E BE                     CP     M                    ; Exhausted the record
+0277: 030F D2 25 03               JP     NC,getNextChar2      ; Skip if not
+0278: 0312
+0279: 0312 01 5C 00               LD     BC,FCB1              ; else read more
+0280: 0315 CD 3D 02               CALL   readSeq              ; Read the SUB file
+0281: 0318 FE 00                  CP     00H                  ; Is this a good read ?
+0282: 031A CA 20 03               JP     Z,getNextChar1       ; Skip if yes
+0283: 031D 3E 1A                  LD     A,01AH               ; else return with EOF
+0284: 031F C9                     RET
+0285: 0320
+0286: 0320         ;L0320:
+0287: 0320             getNextChar1:
+0288: 0320 21 74 06               LD     HL,rclIndex          ; initialize the rclIndex
+0289: 0323 36 00                  LD     (HL),00H
+0290: 0325         ;L0325:
+0291: 0325             getNextChar2:
+0292: 0325 3A 74 06               LD     A,(rclIndex)         ; Get rclIndex value
+0293: 0328 3C                     INC    A                    ; Increment it
+0294: 0329 32 74 06               LD     (rclIndex),A         ; And put it back
+0295: 032C 3D                     DEC    A                    ; Restore dmaIndexs original value
+0296: 032D 4F                     LD     C,A
+0297: 032E 06 00                  LD     B,00H                ; BC = Record Index
+0298: 0330 21 80 00               LD     HL,DMA               ; Pointer to read buffer
+0299: 0333 09                     ADD    HL,BC                ; Point at current byte
+0300: 0334
+0301: 0334 7E                     LD     A,(HL)               ; Get byte from record
+0302: 0335 32 75 06               LD     (currentChar1),A     ; Store it in currentChar1
+0303: 0338 FE 0D                  CP     CR                   ; Is it carriage return ?
+0304: 033A C2 62 03               JP     NZ,UpCase            ; Uppercase if not
+0305: 033D
+0306: 033D         ; else adjust the line number
+0307: 033D 3A B8 05               LD     A,(LineNumber+2)
+0308: 0340 3C                     INC    A
+0309: 0341 32 B8 05               LD     (LineNumber+2),A     ; is the unit value
+0310: 0344 4F                     LD     C,A
+0311: 0345 3E 39                  LD     A,039H
+0312: 0347 B9                     CP     C                    ;  > ASCII 9 ?
+0313: 0348 D2 62 03               JP     NC,UpCase            ;   Skip  if not
+0314: 034B 21 B8 05               LD     HL,LineNumber+2
+0315: 034E 36 30                  LD     (HL),030H            ; Set the unit value to ASCII 0
+0316: 0350 2B                     DEC    HL
+0317: 0351 7E                     LD     A,(HL)               ; is the ten value
+0318: 0352 3C                     INC    A
+0319: 0353 77                     LD     (HL),A
+0320: 0354 4F                     LD     C,A
+0321: 0355 3E 39                  LD     A,039H               ;  > ASCII 9 ?
+0322: 0357 B9                     CP     C
+0323: 0358 D2 62 03               JP     NC,UpCase            ;   Skip  if not
+0324: 035B 21 B7 05               LD     HL,LineNumber+1
+0325: 035E 36 30                  LD     (HL),030H            ; ASCII 0
+0326: 0360 2B                     DEC    HL                   ; Set the unit value to ASCII 0
+0327: 0361 34                     INC    M                    ; Set the hundreds value to ASCII 0
+0328: 0362             UpCase:
+0329: 0362         ; make char upper case
+0330: 0362 3A 75 06               LD     A,(currentChar1)     ; Get the char read
+0331: 0365 D6 61                  SUB    61H                  ; Test against ASCII a
+0332: 0367 FE 1A                  CP     01AH                 ; is it >=  ASCII a
+0333: 0369 D2 74 03               JP     NC,UpCase1           ; Skip if not
+0334: 036C 3A 75 06               LD     A,(currentChar1)     ; get the original char
+0335: 036F E6 5F                  AND    05FH                 ; make it upper case
+0336: 0371 32 75 06               LD     (currentChar1),A     ; Put back into currentChar1
+0337: 0374         ;L0374:
+0338: 0374             UpCase1:
+0339: 0374 3A 75 06               LD     A,(currentChar1)     ; Get currentChar1
+0340: 0377 C9                     RET
+0341: 0378         ;-----------------------   Get next char from dma read buffer
+0342: 0378
+0343: 0378
+0344: 0378         ; ------------------------  Write to SUB file
+0345: 0378         ;              ORG  0378H
+0346: 0378             writeSUB:
+0347: 0378         ;L0378:
+0348: 0378 01 BB 05               LD     BC,fcbSUB
+0349: 037B CD 4D 02               CALL   writeSeq
+0350: 037E FE 00                  CP     00H
+0351: 0380 CA 89 03               JP     Z,DumbRet3           ; Return if no error
+0352: 0383 01 53 01               LD     BC,msg3
+0353: 0386 CD A7 02               CALL   errorExit            ; exit via error
+0354: 0389         ;L0389:
+0355: 0389             DumbRet3:
+0356: 0389 C9                     RET
+0357: 038A         ; ------------------------  Write to SUB file
+0358: 038A
+0359: 038A
+0360: 038A         ;     <New code fragment-----from 038A to 03E5 ( 3E5 :  997)>
+0361: 038A         ;              ORG  038AH
+0362: 038A             L038A:
+0363: 038A 21 76 06               LD     HL,newBuffer
+0364: 038D 36 00                  LD     (HL),00H             ;#? Set to 0000 - initialize
+0365: 038F 21 00 00               LD     HL,0000H
+0366: 0392 22 76 0E               LD     (newBufferIndex),HL  ;#? Set newBufferIndex to 0000
+0367: 0395 21 7C 0E               LD     HL,passNumber
+0368: 0398 36 01                  LD     (HL),01H             ;#? Set passNumber to 01
+0369: 039A             L039A:
+0370: 039A 3A 7C 0E               LD     A,(passNumber)       ; Get value #?
+0371: 039D 1F                     RRA                         ; LSB Set ? ( is it FF ?) set by CR 0A
+0372: 039E D2 80 04               JP     NC,DumbRet1          ; RET if LSB not Set
+0373: 03A1
+0374: 03A1 21 78 0E               LD     HL,subFileIndex
+0375: 03A4 36 00                  LD     (HL),00H             ; Init subFileIndex
+0376: 03A6
+0377: 03A6
+0378: 03A6             L03A6:
+0379: 03A6 CD 09 03               CALL   getNextChar          ; Get a char, stuff into currentChar1
+0380: 03A9         ; looking for either CR, or ctrl-z(EOF)
+0381: 03A9 32 7D 0E               LD     (currentChar2),A     ; Save it
+0382: 03AC D6 1A                  SUB    01AH                 ; ctrl-Z/ EOF
+0383: 03AE C6 FF                  ADD    A,0FFH
+0384: 03B0 9F                     SBC    A,A
+0385: 03B1 F5                     PUSH   AF                   ;#?  what ?
+0386: 03B2 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
+0387: 03B5 D6 0D                  SUB    CR                   ; carriage return
+0388: 03B7 C6 FF                  ADD    A,0FFH
+0389: 03B9 9F                     SBC    A,A                  ;#? What again
+0390: 03BA C1                     POP    BC                   ; get 1st what
+0391: 03BB 48                     LD     C,B                  ; both b and c are th same
+0392: 03BC A1                     AND    C                    ; #?????
+0393: 03BD 1F                     RRA
+0394: 03BE D2 6B 04               JP     NC,046BH             ; Jump if CR or ctrl-z(EOF)
+0395: 03C1
+0396: 03C1         ; Not Carriage Return or ctrl-z(EOF)
+0397: 03C1         ;   If its a LF skip past this char and get next
+0398: 03C1 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
+0399: 03C4 FE 0A                  CP     LF                   ; Is it a Line Feed ?
+0400: 03C6 CA 68 04               JP     Z,0468H              ;  Loop back if yes (JP  03A6H)
+0401: 03C9
+0402: 03C9         ; Not Line Feed
+0403: 03C9         ;   Is it a $
+0404: 03C9 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
+0405: 03CC FE 24                  CP     024H                 ; is it $
+0406: 03CE C2 36 04               JP     NZ,0436H             ; skip if not $
+0407: 03D1
+0408: 03D1         ; char is $
+0409: 03D1 CD 09 03               CALL   getNextChar
+0410: 03D4 32 7D 0E               LD     (currentChar2),A
+0411: 03D7 FE 24                  CP     024H                 ;#  $$ = $
+0412: 03D9 C2 E6 03               JP     NZ,paramStart        ; skip if single $ (Parameter)
+0413: 03DC 2A 7D 0E               LD     HL,(currentChar2)
+0414: 03DF 4D                     LD     C,L
+0415: 03E0 CD C4 04               CALL   04C4H
+0416: 03E3 C3 33 04               JP     I03A6
+0417: 03E6
+0418: 03E6
+0419: 03E6         ; Single $, Argument
+0420: 03E6         ;L03E6:
+0421: 03E6             paramStart:
+0422: 03E6 3A 7D 0E               LD     A,(currentChar2)     ; parameter #
+0423: 03E9 D6 30                  SUB    030H                 ; Go from ASCII to number
+0424: 03EB 32 7D 0E               LD     (currentChar2),A     ; Save it
+0425: 03EE 4F                     LD     C,A
+0426: 03EF 3E 09                  LD     A,09H                ; Max parameter #
+0427: 03F1 B9                     CP     C                    ; Parameter number OK ?
+0428: 03F2 D2 FE 03               JP     NC,findArgument      ;  Skip if yes
+0429: 03F5
+0430: 03F5 01 8D 01               LD     BC,msg6              ; Load Error message
+0431: 03F8 CD A7 02               CALL   errorExit            ; exit via error
+0432: 03FB C3 33 04               JP     I03A6
+0433: 03FE
+0434: 03FE
+0435: 03FE         ; Single $, Argument - continue
+0436: 03FE             findArgument:
+0437: 03FE         ;L03FE:
+0438: 03FE 21 7A 0E               LD     HL,comTailIndex      ; int argument index on Comtail
+0439: 0401 36 00                  LD     (HL),00H             ; Start search at beginning
+0440: 0403 CD AD 04               CALL   skipDelimiters
+0441: 0406         ; At start of token in command tail
+0442: 0406             findArgument1:
+0443: 0406         ;L0406:
+0444: 0406 3A 7D 0E               LD     A,(currentChar2)     ; Get index counter
+0445: 0409 FE 00                  CP     00H                  ; is it 0 ?
+0446: 040B CA 22 04               JP     Z,foundArg           ; yes we found our arg
+0447: 040E 21 7D 0E               LD     HL,currentChar2      ; Adjust the counter
+0448: 0411 35                     DEC    M                    ;  by decrementing it
+0449: 0412         ;L0412:
+0450: 0412         ; Find token start
+0451: 0412             findArgument2:
+0452: 0412 CD 81 04               CALL   isItDelim            ; test this token
+0453: 0415 1F                     RRA                         ; Acc = 0 if delim found
+0454: 0416 D2 1C 04               JP     NC,skipDelimiters0
+0455: 0419 C3 12 04               JP     findArgument2
+0456: 041C
+0457: 041C         ;     <New code fragment-----from 041C to 0421 ( 421 : 1057)>
+0458: 041C         ;              ORG  041CH
+0459: 041C         ;L041C:
+0460: 041C             skipDelimiters0:
+0461: 041C CD AD 04               CALL   skipDelimiters
+0462: 041F C3 06 04               JP     findArgument1
+0463: 0422
+0464: 0422
+0465: 0422         ;L0422:
+0466: 0422             foundArg:
+0467: 0422 CD 81 04               CALL   isItDelim            ; test this token
+0468: 0425 1F                     RRA
+0469: 0426 D2 33 04               JP     NC,I03A6             ; Get out if Delim
+0470: 0429 2A 79 0E               LD     HL,(comTailChar)
+0471: 042C 4D                     LD     C,L
+0472: 042D CD C4 04               CALL   04C4H
+0473: 0430 C3 22 04               JP     foundArg
+0474: 0433
+0475: 0433
+0476: 0433         ;              ORG  0433H
+0477: 0433             I03A6:
+0478: 0433         ;L0433:
+0479: 0433 C3 68 04               JP     0468H                ; (JP  03A6H)
+0480: 0436
+0481: 0436         ;     <New code fragment-----from 0436 to 0455 ( 455 : 1109)>
+0482: 0436         ;              ORG  0436H
+0483: 0436         ; Arrived here if currentChar2 is not
+0484: 0436         ;   $ CR LF or EOF (01AH)
+0485: 0436         ;   test for caret
+0486: 0436             L0436:
+0487: 0436 3A 7D 0E               LD     A,(currentChar2)     ; Get back the char retrieved
+0488: 0439 FE 5E                  CP     05EH                 ; Is it a Caret ^ (^s = ctrl-X)
+0489: 043B C2 61 04               JP     NZ,0461H             ; Skip if if not a caret
+0490: 043E
+0491: 043E         ; here after a caret
+0492: 043E CD 09 03               CALL   getNextChar
+0493: 0441 D6 61                  SUB    061H
+0494: 0443 32 7D 0E               LD     (currentChar2),A
+0495: 0446 4F                     LD     C,A
+0496: 0447 3E 19                  LD     A,019H
+0497: 0449 B9                     CP     C
+0498: 044A D2 56 04               JP     NC,0456H
+0499: 044D 01 9D 01               LD     BC,msg7
+0500: 0450 CD A7 02               CALL   errorExit            ; exit via error
+0501: 0453 C3 5E 04               JP     045EH                ;  ((JP  03A6H))
+0502: 0456
+0503: 0456         ;     <New code fragment-----from 0456 to 045D ( 45D : 1117)>
+0504: 0456         ;              ORG  0456H
+0505: 0456             L0456:
+0506: 0456 3A 7D 0E               LD     A,(currentChar2)
+0507: 0459 3C                     INC    A
+0508: 045A 4F                     LD     C,A
+0509: 045B CD C4 04               CALL   04C4H
+0510: 045E
+0511: 045E         ;     <New code fragment-----from 045E to 0460 ( 460 : 1120)>
+0512: 045E         ;              ORG  045EH
+0513: 045E             L045E:
+0514: 045E C3 68 04               JP     0468H                ;  (JP  03A6H)
+0515: 0461
+0516: 0461         ;     <New code fragment-----from 0461 to 0467 ( 467 : 1127)>
+0517: 0461         ;              ORG  0461H
+0518: 0461         ; Arrived here if currentChar2 is not
+0519: 0461         ;    ^ $ CR LF or EOF (01AH)
+0520: 0461             L0461:
+0521: 0461 2A 7D 0E               LD     HL,(currentChar2)    ; Get back the char retrieved in L
+0522: 0464 4D                     LD     C,L                  ; move it to C
+0523: 0465 CD C4 04               CALL   04C4H
+0524: 0468
+0525: 0468         ;     <New code fragment-----from 0468 to 046A ( 46A : 1130)>
+0526: 0468         ;              ORG  0468H
+0527: 0468             L0468:
+0528: 0468 C3 A6 03               JP     03A6H
+0529: 046B
+0530: 046B         ;     <New code fragment-----from 046B to 047F ( 47F : 1151)>
+0531: 046B         ;              ORG  046BH
+0532: 046B         ; Arrived here if currentChar2 is CR or EOF (01AH)
+0533: 046B             L046B:
+0534: 046B 3A 7D 0E               LD     A,(currentChar2)     ; get active character
+0535: 046E D6 0D                  SUB    0DH
+0536: 0470 D6 01                  SUB    01H
+0537: 0472 9F                     SBC    A,A                  ; Acc = 0FFH if ODH
+0538: 0473 32 7C 0E               LD     (passNumber),A       ; Set Pass Number to -1
+0539: 0476 2A 78 0E               LD     HL,(subFileIndex)    ; Get subFileIndex value
+0540: 0479 4D                     LD     C,L                  ; move index to C
+0541: 047A CD C4 04               CALL   04C4H
+0542: 047D C3 9A 03               JP     039AH
+0543: 0480
+0544: 0480         ;     <New code fragment-----from 0480 to 0480 ( 480 : 1152)>
+0545: 0480         ;              ORG  0480H
+0546: 0480         ;L0480:
+0547: 0480             DumbRet1:
+0548: 0480 C9                     RET
+0549: 0481
+0550: 0481
+0551: 0481         ;Find Next Token ??
+0552: 0481         ;L0481:
+0553: 0481         ; Return Acc = 0 if Delim
+0554: 0481         ;            = 1 if Not Delim
+0555: 0481             isItDelim:
+0556: 0481 2A 7A 0E               LD     HL,(comTailIndex)    ; Get index into comtail
+0557: 0484 26 00                  LD     H,00H
+0558: 0486 01 F4 05               LD     BC,rawCommandLine    ; Get base for command line
+0559: 0489 09                     ADD    HL,BC
+0560: 048A 7E                     LD     A,(HL)               ; Put current char into Acc
+0561: 048B 32 79 0E               LD     (comTailChar),A
+0562: 048E D6 20                  SUB    020H                 ; Test for SPACE
+0563: 0490 D6 01                  SUB    01H
+0564: 0492 9F                     SBC    A,A
+0565: 0493 F5                     PUSH   AF
+0566: 0494 3A 79 0E               LD     A,(comTailChar)
+0567: 0497 D6 00                  SUB    00H                  ; Test for NUL
+0568: 0499 D6 01                  SUB    01H
+0569: 049B 9F                     SBC    A,A
+0570: 049C C1                     POP    BC
+0571: 049D 48                     LD     C,B
+0572: 049E B1                     OR     C
+0573: 049F 1F                     RRA
+0574: 04A0 DA AA 04               JP     C,DumbRet5           ; Acc = 0 , delim found
+0575: 04A3 21 7A 0E               LD     HL,comTailIndex      ; No delim
+0576: 04A6 34                     INC    M                    ; Update the index
+0577: 04A7 3E 01                  LD     A,01H                ; Set Acc = 1, no delim
+0578: 04A9 C9                     RET                         ; return
+0579: 04AA
+0580: 04AA         ;L04AA:
+0581: 04AA             DumbRet5:
+0582: 04AA 3E 00                  LD     A,00H
+0583: 04AC C9                     RET
+0584: 04AD
+0585: 04AD         ;     <New code fragment-----from 04AD to 04C2 ( 4C2 : 1218)>
+0586: 04AD         ;              ORG  04ADH
+0587: 04AD
+0588: 04AD             skipDelimiters:
+0589: 04AD 2A 7A 0E               LD     HL,(comTailIndex)    ; Get comtail index
+0590: 04B0 26 00                  LD     H,00H
+0591: 04B2 01 F4 05               LD     BC,rawCommandLine    ; Get base for command line
+0592: 04B5 09                     ADD    HL,BC
+0593: 04B6 7E                     LD     A,(HL)               ; Get character
+0594: 04B7 FE 20                  CP     020H                 ; Is it a Space ?
+0595: 04B9 C2 C3 04               JP     NZ,DumbRet4          ;  Return if not
+0596: 04BC 21 7A 0E               LD     HL,comTailIndex      ; else go for more
+0597: 04BF 34                     INC    M                    ; increment the index
+0598: 04C0 C3 AD 04               JP     skipDelimiters       ; Loop
+0599: 04C3
+0600: 04C3         ;     <New code fragment-----from 04C3 to 04C3 ( 4C3 : 1219)>
+0601: 04C3         ;              ORG  04C3H
+0602: 04C3         ;L04C3:
+0603: 04C3             DumbRet4:
+0604: 04C3 C9                     RET
+0605: 04C4
+0606: 04C4         ;     <New code fragment-----from 04C4 to 04FD ( 4FD : 1277)>
+0607: 04C4         ;              ORG  04C4H
+0608: 04C4         ; Arrived here if currentChar2 is not
+0609: 04C4         ;    ^ $  LF or EOF (01AH)
+0610: 04C4         ;  Character from currentChar2 is in C
+0611: 04C4         ; is this where we build the resolved commands ?????????????
+0612: 04C4             L04C4:
+0613: 04C4         ; Called with c = value to work on
+0614: 04C4 21 7B 0E               LD     HL,currentChar3
+0615: 04C7 71                     LD     (HL),C               ; Save the value in currentChar3
+0616: 04C8 2A 76 0E               LD     HL,(newBufferIndex)  ; Get value from newBufferIndex
+0617: 04CB 23                     INC    HL                   ; Increment it
+0618: 04CC 22 76 0E               LD     (newBufferIndex),HL  ; Put it back
+0619: 04CF 11 FF 07               LD     DE,07FFH
+0620: 04D2 CD 99 05               CALL   HLminusDE            ; Did we overflow Command buffer ?
+0621: 04D5 D2 DE 04               JP     NC,04DEH             ; Skip if not
+0622: 04D8
+0623: 04D8 01 64 01               LD     BC,msg4              ; Command buffer overflow
+0624: 04DB CD A7 02               CALL   errorExit            ; exit via error
+0625: 04DE
+0626: 04DE             L04DE:
+0627: 04DE 2A 76 0E               LD     HL,(newBufferIndex)  ; Get value from newBufferIndex
+0628: 04E1 01 76 06               LD     BC,newBuffer         ; Base of newBuffer
+0629: 04E4 09                     ADD    HL,BC
+0630: 04E5 3A 7B 0E               LD     A,(currentChar3)     ; Get the working value
+0631: 04E8 77                     LD     (HL),A               ; Put it in Buffer ?
+0632: 04E9
+0633: 04E9 3A 78 0E               LD     A,(subFileIndex)     ; Get value for subFileIndex
+0634: 04EC 3C                     INC    A                    ; Increment it
+0635: 04ED 32 78 0E               LD     (subFileIndex),A     ; Put it back
+0636: 04F0
+0637: 04F0 4F                     LD     C,A
+0638: 04F1 3E 7D                  LD     A,07DH               ; Max size for command(file name)
+0639: 04F3 B9                     CP     C
+0640: 04F4 D2 FD 04               JP     NC,DumbRet2          ; Return if size OK
+0641: 04F7 01 7C 01               LD     BC,msg5              ; Command too long
+0642: 04FA CD A7 02               CALL   errorExit            ; exit via error
+0643: 04FD             DumbRet2:
+0644: 04FD C9                     RET
+0645: 04FE
+0646: 04FE         ;     <New code fragment-----from 04FE to 055E ( 55E : 1374)>
+0647: 04FE         ;              ORG  04FEH
+0648: 04FE             L04FE:
+0649: 04FE 01 BB 05               LD     BC,fcbSUB
+0650: 0501 CD 2D 02               CALL   deleteFile
+0651: 0504 21 DB 05               LD     HL,05DBH
+0652: 0507 36 00                  LD     (HL),00H
+0653: 0509 01 BB 05               LD     BC,fcbSUB
+0654: 050C CD 5D 02               CALL   makeFile
+0655: 050F 3A DE 05               LD     A,(osStatus)
+0656: 0512 FE FF                  CP     0FFH
+0657: 0514 C2 1D 05               JP     NZ,051DH
+0658: 0517 01 B7 01               LD     BC,msg8
+0659: 051A CD A7 02               CALL   02A7H
+0660: 051D             L051D:
+0661: 051D CD 7A 05               CALL   057AH
+0662: 0520 32 7E 0E               LD     (0E7EH),A
+0663: 0523 FE 00                  CP     00H
+0664: 0525 CA 65 05               JP     Z,0565H
+0665: 0528 3A 7E 0E               LD     A,(0E7EH)
+0666: 052B 32 80 00               LD     (0080H),A            ;#? COMTAILCOUNT
+0667: 052E 4F                     LD     C,A
+0668: 052F 06 00                  LD     B,00H
+0669: 0531 21 81 00               LD     HL,0081H
+0670: 0534 09                     ADD    HL,BC
+0671: 0535 36 00                  LD     (HL),00H
+0672: 0537 2A 7E 0E               LD     HL,(0E7EH)
+0673: 053A 26 00                  LD     H,00H
+0674: 053C 01 82 00               LD     BC,0082H
+0675: 053F 09                     ADD    HL,BC
+0676: 0540 36 24                  LD     (HL),024H
+0677: 0542             L0542:
+0678: 0542 3E 00                  LD     A,00H
+0679: 0544 21 7E 0E               LD     HL,0E7EH
+0680: 0547 BE                     CP     M
+0681: 0548 D2 5F 05               JP     NC,055FH
+0682: 054B CD 7A 05               CALL   057AH
+0683: 054E 2A 7E 0E               LD     HL,(0E7EH)
+0684: 0551 26 00                  LD     H,00H
+0685: 0553 01 80 00               LD     BC,0080H             ;#? COMTAILCOUNT/RECORDSIZE
+0686: 0556 09                     ADD    HL,BC
+0687: 0557 77                     LD     (HL),A
+0688: 0558 21 7E 0E               LD     HL,0E7EH
+0689: 055B 35                     DEC    M
+0690: 055C C3 42 05               JP     0542H
+0691: 055F
+0692: 055F         ;     <New code fragment-----from 055F to 0564 ( 564 : 1380)>
+0693: 055F         ;              ORG  055FH
+0694: 055F             L055F:
+0695: 055F CD 78 03               CALL   writeSUB             ;   0378H
+0696: 0562 C3 1D 05               JP     051DH
+0697: 0565
+0698: 0565         ;     <New code fragment-----from 0565 to 0579 ( 579 : 1401)>
+0699: 0565         ;              ORG  0565H
+0700: 0565             L0565:
+0701: 0565 01 BB 05               LD     BC,fcbSUB
+0702: 0568 CD 1A 02               CALL   closeFile
+0703: 056B 3A DE 05               LD     A,(osStatus)
+0704: 056E FE FF                  CP     0FFH
+0705: 0570 C2 79 05               JP     NZ,0579H
+0706: 0573 01 C6 01               LD     BC,msg9
+0707: 0576 CD A7 02               CALL   02A7H
+0708: 0579             L0579:
+0709: 0579 C9                     RET
+0710: 057A
+0711: 057A         ;     <New code fragment-----from 057A to 0586 ( 586 : 1414)>
+0712: 057A         ;              ORG  057AH
+0713: 057A             L057A:
+0714: 057A 2A 76 0E               LD     HL,(newBufferIndex)
+0715: 057D 2B                     DEC    HL
+0716: 057E 22 76 0E               LD     (newBufferIndex),HL
+0717: 0581 01 76 06               LD     BC,newBuffer
+0718: 0584 09                     ADD    HL,BC
+0719: 0585 7E                     LD     A,(HL)
+0720: 0586 C9                     RET
+0721: 0587
+0722: 0587         ;     <New code fragment-----from 0587 to 0589 ( 589 : 1417)>
+0723: 0587         ;              ORG  0587H
+0724: 0587             jpWBOOT:
+0725: 0587 C3 00 00               JP     WBOOT
+0726: 058A
+0727: 058A         ;     <New code fragment-----from 058A to 058C ( 58C : 1420)>
+0728: 058A         ;              ORG  058AH
+0729: 058A             jpBDOS1:
+0730: 058A C3 05 00               JP     BDOS
+0731: 058D
+0732: 058D         ;     <New code fragment-----from 058D to 058F ( 58F : 1423)>
+0733: 058D         ;              ORG  058DH
+0734: 058D             jpBDOS2:
+0735: 058D C3 05 00               JP     BDOS
+0736: 0590
+0737: 0590         ;     <New unknown fragment-----from 0590 to 0598 ( 598 : 1432)>
+0738: 0590         ;              ORG  0590H
+0739: 0590                        DS     0009H
+0740: 0599
+0741: 0599         ;     <New code fragment-----from 0599 to 059F ( 59F : 1439)>
+0742: 0599                        ORG    0599H
+0743: 0599         ;----------------------------HLminusDE
+0744: 0599             L0599:
+0745: 0599             HLminusDE:
+0746: 0599 7B                     LD     A,E
+0747: 059A 95                     SUB    L
+0748: 059B 6F                     LD     L,A
+0749: 059C 7A                     LD     A,D
+0750: 059D 9C                     SBC    A,H
+0751: 059E 67                     LD     H,A
+0752: 059F C9                     RET
+0753: 05A0         ;----------------------------HLminusDE
+0754: 05A0
+0755: 05A0
+0756: 05A0         ;     <New unknown fragment-----from 05A0 to 05FF ( 5FF : 1535)>
+0757: 05A0         ;              ORG  05A0H
+0758: 05A0         ;			DS		27
+0759: 05A0                        ORG    05B6H
+0760: 05B6         ;L05B6:
+0761: 05B6             LineNumber:
+0762: 05B6 30 30 31 20 24                DB     '001 $'
+0763: 05BB
+0764: 05BB         ;			ORG	05BBH
+0765: 05BB 00 24 24 24 20 20 20 20 2E 53 55 42     fcbSUB:    DB     0,'$$$    .SUB'
+0766: 05C7
+0767: 05C7
+0768: 05C7                        ORG    05DCH
+0769: 05DC         ;L5DC:
+0770: 05DC             msgLSB:    DS     1                    ; MSB of message pointer (1F7)
+0771: 05DD             msgMSB:    DS     1                    ; LSB of message pointer
+0772: 05DE
+0773: 05DE         ;L5DE:
+0774: 05DE             osStatus:
+0775: 05DE                        DS     1                    ; #?
+0776: 05DF
+0777: 05DF         ;			ORG	05DFH
+0778: 05DF         ;L5DF:
+0779: 05DF             fcbOpenLSB: DS     1                    ; MSB of Open pointer (207)
+0780: 05E0             fcbOpenMSB: DS     1                    ; LSB of Open pointer
+0781: 05E1
+0782: 05E1         ;			ORG	05E1H
+0783: 05E1             fcbCloseLSB: DS     1                    ; LSB of fcb pointer for Close
+0784: 05E2             fcbCloseMSB: DS     1                    ; MSB of fcb pointer for Close
+0785: 05E3
+0786: 05E3         ;			ORG	05E3H
+0787: 05E3             fcbDelLSB: DS     1                    ; LSB of fcb pointer for Delete
+0788: 05E4             fcbDelMSB: DS     1                    ; MSB of fcb pointer for Delete
+0789: 05E5
+0790: 05E5         ;			ORG	05E5H
+0791: 05E5             fcbReadLSB: DS     1                    ; LSB of fcb pointer for Read
+0792: 05E6             fcbReadMSB: DS     1                    ; MSB of fcb pointer for Read
+0793: 05E7
+0794: 05E7         ;			ORG	05E7H
+0795: 05E7             fcbSubLSB: DS     1                    ; LSB of fcbSUB pointer (24D)
+0796: 05E8             fcbSubMSB: DS     1                    ; MSB of fcbSUB pointer (24D)
+0797: 05E9
+0798: 05E9         ;			ORG	05E9H
+0799: 05E9             fcbMakeLSB: DS     1                    ; LSB of fcb for Make
+0800: 05EA             fcbMakeMSB: DS     1                    ; MSB of fcb for Make
+0801: 05EB
+0802: 05EB
+0803: 05EB
+0804: 05EB         ;      			ORG		05EBH
+0805: 05EB         ;------- moveData Variables -------
+0806: 05EB             movSrc:    DS     2                    ; Source pointer  for move
+0807: 05ED             movDest:   DS     2                    ; Destination pointer for Move
+0808: 05EF             movSize:   DS     1                    ; Size of the remaining move
+0809: 05F0
+0810: 05F0         ;			ORG		05F0H
+0811: 05F0 00 00       CallerSP:  DW     0000
+0812: 05F2
+0813: 05F2         ;L5F2:
+0814: 05F2             msgLSB1:   DS     1                    ; MSB of message pointer (2A7)
+0815: 05F3             msgMSB1:   DS     1                    ; LSB of message pointer
+0816: 05F4
+0817: 05F4
+0818: 05F4         ;L5F4:
+0819: 05F4             rawCommandLine:
+0820: 05F4                        DS     07FH
+0821: 0673
+0822: 0673                        ORG    0674H
+0823: 0674         ;L0674H:
+0824: 0674             rclIndex:
+0825: 0674             flag1:
+0826: 0674 00                     DB     00H                  ; index into DMA record
+0827: 0675         ;L0675H:
+0828: 0675             currentChar1:
+0829: 0675                        DS     1
+0830: 0676
+0831: 0676         ;			ORG		0676H
+0832: 0676         ;L0676H:
+0833: 0676             newBuffer:
+0834: 0676         ;			DS		?
+0835: 0676
+0836: 0676                        ORG    0E93H
+0837: 0E93             TopOfStack:
+0838: 0E93
+0839: 0E93
+0840: 0E93                        ORG    0E76H
+0841: 0E76
+0842: 0E76             newBufferIndex: DS     2
+0843: 0E78
+0844: 0E78             subFileIndex: DS     1
+0845: 0E79             comTailChar: DS     1
+0846: 0E7A         ;L0E7AH
+0847: 0E7A             comTailIndex:
+0848: 0E7A                        DS     1
+0849: 0E7B         ;L0E7BH:
+0850: 0E7B             currentChar3:
+0851: 0E7B                        DS     1
+0852: 0E7C         ;L0E7CH:
+0853: 0E7C             passNumber:
+0854: 0E7C                        DS     1
+0855: 0E7D         ;L0E7DH:
+0856: 0E7D             currentChar2:
+0857: 0E7D                        DS     1
+0858: 0E7E
+0859: 0E7E             EndOfCode:
            ************************   Xref   ************************
 0000: $               0E7D
-0015: BDOS            0005   0691 0696
+0015: BDOS            0005   0730 0735
 0008: BELL            0007
-0753: CallerSP        05F0   0061 0230
-0787: commandIndex    0E78   0367 0509 0594 0596
+0811: CallerSP        05F0   0061 0230
+0098: closeFile       021A   0702
 0018: COMTAIL         0080   0019
-0020: COMTAILCHARS    0081   0238
-0019: COMTAILCOUNT    0080   0020 0243
-0761: comTailTemp     05F4   0241 0245 0525 0558
-0010: CR              000D   0301 0379
-0770: currentChar1    0675   0300 0329 0333 0335 0338
-0798: currentChar2    0E7D   0373 0378 0388 0391 0396 0399 0407 0409 0425 0428 0461 0467 0479 0492 0504
-0792: currentChar3    0E7B   0576 0591
-0022: DMA             0080   0296
-0766: dmaIndex        0674   0261 0270 0286 0290 0292
+0845: comTailChar     0E79   0470 0561 0566
+0020: COMTAILCHARS    0081   0243
+0019: COMTAILCOUNT    0080   0020 0248
+0847: comTailIndex    0E7A   0438 0556 0575 0589 0596
+0010: CR              000D   0303 0387
+0828: currentChar1    0675   0302 0330 0334 0336 0339
+0856: currentChar2    0E7D   0381 0386 0398 0404 0410 0413 0422 0424 0444 0447 0487 0494 0506 0521 0534
+0850: currentChar3    0E7B   0614 0630
+0112: deleteFile      022D   0650
+0022: DMA             0080   0298
 0011: DOLLAR          0024
 0207: DumbRet         02A6   0190
-0517: DumbRet1        0480   0365
-0604: DumbRet2        04FD   0601
-0801: EndOfCode       0E7E
-0214: errorExit       02A7   0259 0349 0415 0473 0586 0603
-0016: FCB1            005C   0253 0274
-0017: FCB1TYPE        0065   0251
-0726: fcbSUB          05BB   0344 0610 0614 0662
-0767: flag1           0674
-0267: getNextChar     0309   0372 0395 0465
-0284: getNextChar1    0320   0277
-0289: getNextChar2    0325   0272
-0237: GrabComTail     02CC   0064
-0260: GrabComTail1    0303   0257
-0706: HLminusDE       0599   0582
-0690: jpBDOS1         058A   0079 0120
-0695: jpBDOS2         058D   0092 0106 0133 0146 0159
-0685: jpWBOOT         0587   0067
-0098: L021A           021A
-0112: L022D           022D
-0138: L024D           024D
-0151: L025D           025D
-0236: L02CC           02CC
-0326: L0362           0362
-0343: L0378           0378
-0350: L0389           0389
-0355: L038A           038A
-0362: L039A           039A
-0371: L03A6           03A6
-0406: L03E6           03E6
-0420: L03FE           03FE
-0424: L0406           0406
-0430: L0412           0412
-0438: L041C           041C
-0444: L0422           0422
-0455: L0433           0433
-0460: L0436           0436
-0478: L0456           0456
-0486: L045E           045E
-0491: L0461           0461
-0498: L0468           0468
-0503: L046B           046B
-0522: L0481           0481
-0549: L04AA           04AA
-0555: L04AD           04AD
-0569: L04C3           04C3
-0574: L04C4           04C4
-0587: L04DE           04DE
-0609: L04FE           04FE
-0621: L051D           051D
-0638: L0542           0542
-0655: L055F           055F
-0661: L0565           0565
-0669: L0579           0579
-0674: L057A           057A
-0705: L0599           0599
-0774: L0676H          0676
-0783: L0E76H          0E76
-0786: L0E78H          0E78
-0791: L0E7BH          0E7B
-0009: LF              000A   0389
+0547: DumbRet1        0480   0372
+0643: DumbRet2        04FD   0640
+0355: DumbRet3        0389   0351
+0603: DumbRet4        04C3   0595
+0581: DumbRet5        04AA   0574
+0859: EndOfCode       0E7E
+0214: errorExit       02A7   0264 0353 0431 0500 0624 0642
+0016: FCB1            005C   0258 0279
+0017: FCB1TYPE        0065   0256
+0783: fcbCloseLSB     05E1   0103
+0784: fcbCloseMSB     05E2   0099
+0787: fcbDelLSB       05E3   0117
+0788: fcbDelMSB       05E4   0113
+0799: fcbMakeLSB      05E9   0157
+0800: fcbMakeMSB      05EA   0153
+0779: fcbOpenLSB      05DF   0089
+0780: fcbOpenMSB      05E0   0085
+0791: fcbReadLSB      05E5   0130
+0792: fcbReadMSB      05E6   0126
+0765: fcbSUB          05BB   0348 0649 0653 0701
+0795: fcbSubLSB       05E7   0144
+0796: fcbSubMSB       05E8   0140
+0436: findArgument    03FE   0428
+0442: findArgument1   0406   0462
+0451: findArgument2   0412   0455
+0825: flag1           0674
+0466: foundArg        0422   0446 0473
+0272: getNextChar     0309   0379 0409 0492
+0287: getNextChar1    0320   0282
+0291: getNextChar2    0325   0277
+0242: GrabComTail     02CC   0064
+0265: GrabComTail1    0303   0262
+0745: HLminusDE       0599   0620
+0477: I03A6           0433   0416 0432 0469
+0555: isItDelim       0481   0452 0467
+0729: jpBDOS1         058A   0079 0120
+0734: jpBDOS2         058D   0092 0106 0133 0147 0160
+0724: jpWBOOT         0587   0067
+0362: L038A           038A
+0369: L039A           039A
+0378: L03A6           03A6
+0486: L0436           0436
+0505: L0456           0456
+0513: L045E           045E
+0520: L0461           0461
+0527: L0468           0468
+0533: L046B           046B
+0612: L04C4           04C4
+0626: L04DE           04DE
+0648: L04FE           04FE
+0660: L051D           051D
+0677: L0542           0542
+0694: L055F           055F
+0700: L0565           0565
+0708: L0579           0579
+0713: L057A           057A
+0744: L0599           0599
+0009: LF              000A   0399
 0044: LFCR            0128   0220
-0722: LineNumber      05B6   0224 0305 0307 0312 0322
-0749: movDest         05ED   0194 0201 0203
-0167: MoveData        0270   0242 0252
+0761: LineNumber      05B6   0224 0307 0309 0314 0324
+0152: makeFile        025D   0654
+0807: movDest         05ED   0194 0201 0203
+0167: MoveData        0270   0247 0257
 0185: MoveData1       027F   0204
-0750: movSize         05EF   0172 0186 0188
-0748: movSrc          05EB   0192 0198 0200
+0808: movSize         05EF   0172 0186 0188
+0806: movSrc          05EB   0192 0198 0200
 0043: msg0            0103
 0045: msg1            012B   0222
-0047: msg2            013D   0258
-0048: msg3            0153   0348
-0049: msg4            0164   0585
-0050: msg5            017C   0602
-0051: msg6            018D   0414
-0052: msg7            019D   0472
-0053: msg8            01B7   0619
-0054: msg9            01C6   0667
-0775: newBuffer       0676   0356 0589 0678
-0784: newBufferIndex  0E76   0359 0578 0580 0588 0675 0677
+0047: msg2            013D   0263
+0048: msg3            0153   0352
+0049: msg4            0164   0623
+0050: msg5            017C   0641
+0051: msg6            018D   0430
+0052: msg7            019D   0499
+0053: msg8            01B7   0658
+0054: msg9            01C6   0706
+0770: msgLSB          05DC   0076
+0814: msgLSB1         05F2   0226
+0771: msgMSB          05DD   0072
+0815: msgMSB1         05F3   0216
+0833: newBuffer       0676   0363 0628 0717
+0842: newBufferIndex  0E76   0366 0616 0618 0627 0714 0716
 0006: NULL            0000
-0083: openBC          0207   0254
-0735: osStatus        05DE   0093 0107 0160 0255 0616 0664
-0795: passNumber      0E7C   0360 0363 0508
+0083: openBC          0207   0259
+0774: osStatus        05DE   0093 0107 0161 0260 0655 0703
+0421: paramStart      03E6   0412
+0853: passNumber      0E7C   0367 0370 0538
 0071: printBC         01F7   0221 0223 0225 0229
 0012: QMARK           003F
-0125: readSeq         023D   0275
-0023: RECORDSIZE      0080   0262
+0819: rawCommandLine  05F4   0246 0250 0558 0591
+0824: rclIndex        0674   0266 0275 0288 0292 0294
+0125: readSeq         023D   0280
+0023: RECORDSIZE      0080   0267
 0027: scCloseFile     0010   0105
 0028: scDeleteFile    0013   0119
-0031: scMakeFile      0016   0158
+0031: scMakeFile      0016   0159
 0026: scOpenFile      000F   0091
 0025: scPrintString   0009   0078
 0029: scReadSeq       0014   0132
-0030: scWriteSeq      0015   0145
+0030: scWriteSeq      0015   0146
+0588: skipDelimiters  04AD   0440 0461 0598
+0460: skipDelimiters0 041C   0454
 0007: SOH             0001
 0058: Start           01DF   0038
-0779: TopOfStack      0E93   0062
-0046: txtSUB          013A   0248
-0327: UpCase          0362   0302 0311 0321
-0337: UpCase1         0374   0332
-0014: WBOOT           0000   0686
+0844: subFileIndex    0E78   0374 0539 0633 0635
+0837: TopOfStack      0E93   0062
+0046: txtSUB          013A   0253
+0328: UpCase          0362   0304 0313 0323
+0338: UpCase1         0374   0333
+0014: WBOOT           0000   0725
+0138: writeSeq        024D   0349
+0346: writeSUB        0378   0695
